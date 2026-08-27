@@ -1,0 +1,21 @@
+<mat-toolbar color="primary" class="toolbar">
+  <span class="brand">ACME Salary Management</span>
+
+  <nav class="nav-links">
+    <a mat-button routerLink="/employees" routerLinkActive="active">Employees</a>
+    <a mat-button routerLink="/analytics" routerLinkActive="active">Analytics</a>
+  </nav>
+
+  <span class="spacer"></span>
+
+  @if (authService.username(); as username) {
+    <span class="username">{{ username }}</span>
+  }
+  <button mat-icon-button (click)="logout()" aria-label="Log out" title="Log out">
+    <mat-icon>logout</mat-icon>
+  </button>
+</mat-toolbar>
+
+<main class="content">
+  <router-outlet />
+</main>
