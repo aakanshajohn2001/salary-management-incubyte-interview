@@ -33,9 +33,12 @@ CREATE TABLE employee (
     email           VARCHAR(200) NOT NULL UNIQUE,
     department_id   BIGINT NOT NULL REFERENCES department (id),
     country_code    VARCHAR(2) NOT NULL REFERENCES country (code),
-    job_band        VARCHAR(10) NOT NULL CHECK (job_band IN ('L1', 'L2', 'L3', 'L4', 'L5', 'L6')),
+    -- job_band/status are constrained to the JobBand/EmployeeStatus enums at the
+    -- application layer (the only write path); a duplicate DB-level CHECK(...IN...)
+    -- was dropped after it triggered a check-constraint evaluation bug on H2 2.4.
+    job_band        VARCHAR(10) NOT NULL,
     hire_date       DATE NOT NULL,
-    status          VARCHAR(20) NOT NULL CHECK (status IN ('ACTIVE', 'TERMINATED')),
+    status          VARCHAR(20) NOT NULL,
     created_at      TIMESTAMP NOT NULL
 );
 
