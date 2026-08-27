@@ -1,0 +1,50 @@
+databases:
+  - name: acme-salary-db
+    plan: free
+    databaseName: salary
+    user: salary
+
+services:
+  - type: web
+    name: acme-salary-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    healthCheckPath: /api/reference/departments
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ADMIN_USERNAME
+        value: hr.manager
+      - key: ADMIN_PASSWORD
+        generateValue: true
+      # true only for the very first deploy so the 10k-employee dataset gets
+      # created; the seeder is idempotent, but this still gets flipped back
+      # to false afterwards to avoid re-checking on every restart.
+      - key: SEED_ON_STARTUP
+        value: "true"
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://acme-salary.vercel.app
+      - key: DB_HOST
+        fromDatabase:
+          name: acme-salary-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: acme-salary-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: acme-salary-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: acme-salary-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: acme-salary-db
+          property: password
