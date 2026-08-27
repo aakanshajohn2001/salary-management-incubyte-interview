@@ -26,12 +26,6 @@ public class Country {
     protected Country() {
     }
 
-    public Country(String code, String name, Currency currency) {
-        this.code = code;
-        this.name = name;
-        this.currency = currency;
-    }
-
     public String getCode() {
         return code;
     }

@@ -130,6 +130,16 @@ numbers (seed time, analytics latency, export latency).
 
 ## Testing strategy
 
+Coverage, measured (not estimated): backend 98.8% lines / 87.8% branches
+via JaCoCo (`mvn test`, report at `backend/target/site/jacoco/index.html`);
+frontend 97.9% lines / 93.0% branches / 96.7% statements via Vitest's V8
+coverage (`ng test -- --coverage`). Remaining gaps on the backend are a
+handful of unused entity accessors (e.g. `AppUser.getCreatedAt()`) kept
+for API completeness rather than stripped to chase 100%, plus Spring's
+`main()` boilerplate; on the frontend, non-logic files (`*.model.ts`,
+`app.config.ts`, `app.routes.ts`) are excluded from the coverage target
+since they're declarative, not tested behavior.
+
 - **Pure unit tests** (JUnit 5, no Spring context): `JwtServiceTest`
   covers token issue/parse/expiry/tamper-rejection in isolation — fast,
   no DB, no HTTP.

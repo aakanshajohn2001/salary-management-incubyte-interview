@@ -73,4 +73,16 @@ describe('AuthService', () => {
     expect(freshService.isAuthenticated()).toBe(true);
     expect(freshService.token()).toBe('stored-jwt');
   });
+
+  it('treats corrupted stored session data as unauthenticated rather than throwing', () => {
+    localStorage.setItem('salary_auth', '{not valid json');
+
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
+
+    expect(() => TestBed.inject(AuthService)).not.toThrow();
+    expect(TestBed.inject(AuthService).isAuthenticated()).toBe(false);
+  });
 });

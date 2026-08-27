@@ -163,6 +163,56 @@ class EmployeeControllerTest {
     }
 
     @Test
+    void list_filteredByCountryCode_returnsOnlyThatCountry() throws Exception {
+        Department engineering = departmentRepository.findByName("Engineering").orElseThrow();
+        Country in = countryRepository.findById("IN").orElseThrow();
+        employeeRepository.save(new Employee("Priya", "Rao", "priya.rao@acme-corp.example",
+                engineering, in, JobBand.L3, LocalDate.of(2021, 6, 1), EmployeeStatus.ACTIVE));
+
+        mockMvc.perform(get("/api/employees").param("countryCode", "IN").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.content[0].email").value("priya.rao@acme-corp.example"));
+    }
+
+    @Test
+    void list_filteredByJobBand_returnsOnlyThatBand() throws Exception {
+        mockMvc.perform(get("/api/employees").param("jobBand", "L4").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.content[0].email").value("grace.hopper@acme-corp.example"));
+    }
+
+    @Test
+    void list_filteredByStatus_returnsOnlyMatchingStatus() throws Exception {
+        mockMvc.perform(get("/api/employees").param("status", "ACTIVE").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(2));
+
+        mockMvc.perform(get("/api/employees").param("status", "TERMINATED").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(0))
+                .andExpect(jsonPath("$.content.length()").value(0));
+    }
+
+    @Test
+    void list_withNoMatchingResults_returnsEmptyPageNotError() throws Exception {
+        mockMvc.perform(get("/api/employees").param("search", "no-such-employee")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(0))
+                .andExpect(jsonPath("$.content.length()").value(0));
+    }
+
+    @Test
+    void list_withBlankSearchAndCountryFilters_isTreatedAsNoFilter() throws Exception {
+        mockMvc.perform(get("/api/employees").param("search", "").param("countryCode", "")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(2));
+    }
+
+    @Test
     void list_withInvalidJobBand_returns400() throws Exception {
         mockMvc.perform(get("/api/employees").param("jobBand", "NOT_A_BAND")
                         .header("Authorization", "Bearer " + token))

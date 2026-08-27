@@ -21,11 +21,6 @@ public class Currency {
     protected Currency() {
     }
 
-    public Currency(String code, BigDecimal fxToUsd) {
-        this.code = code;
-        this.fxToUsd = fxToUsd;
-    }
-
     public String getCode() {
         return code;
     }

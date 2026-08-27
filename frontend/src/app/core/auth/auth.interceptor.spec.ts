@@ -65,4 +65,19 @@ describe('authInterceptor', () => {
     expect(authService.isAuthenticated()).toBe(false);
     expect(navigateSpy).toHaveBeenCalledWith(['/login']);
   });
+
+  it('does not log out or redirect on a non-401 error', () => {
+    authService.login({ username: 'hr.manager', password: 'pw' }).subscribe();
+    httpMock
+      .expectOne(`${environment.apiBaseUrl}/auth/login`)
+      .flush({ token: 'my-token', username: 'hr.manager', role: 'HR_MANAGER', expiresAt: '2030-01-01T00:00:00Z' });
+
+    http.get(`${environment.apiBaseUrl}/employees`).subscribe({ error: () => {} });
+    httpMock
+      .expectOne(`${environment.apiBaseUrl}/employees`)
+      .flush({ message: 'boom' }, { status: 500, statusText: 'Internal Server Error' });
+
+    expect(authService.isAuthenticated()).toBe(true);
+    expect(navigateSpy).not.toHaveBeenCalled();
+  });
 });

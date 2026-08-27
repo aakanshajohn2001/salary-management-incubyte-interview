@@ -33,10 +33,12 @@ describe('SalaryAdjustmentDialogComponent', () => {
     fixture.detectChanges();
 
     fixture.componentInstance.submit();
+    fixture.detectChanges();
 
     httpMock.expectNone(() => true);
     expect(fixture.componentInstance.form.touched).toBe(true);
     expect(dialogRefStub.close).not.toHaveBeenCalled();
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('required');
   });
 
   it('posts the adjustment and closes the dialog with true on success', () => {
@@ -74,9 +76,12 @@ describe('SalaryAdjustmentDialogComponent', () => {
       { message: "Effective date cannot be before the employee's hire date" },
       { status: 400, statusText: 'Bad Request' },
     );
+    fixture.detectChanges();
 
     expect(dialogRefStub.close).not.toHaveBeenCalled();
     expect(fixture.componentInstance.errorMessage()).toBe("Effective date cannot be before the employee's hire date");
+    expect((fixture.nativeElement as HTMLElement).textContent)
+      .toContain("Effective date cannot be before the employee's hire date");
   });
 
   it('cancel closes the dialog with false', () => {
