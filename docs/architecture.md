@@ -111,11 +111,18 @@ of the org data being managed.
 ## API shape (indicative)
 
 - `POST /api/auth/login` → JWT
-- `GET /api/employees?search=&department=&country=&band=&page=&size=` → paginated directory
-- `GET /api/employees/{id}` → profile + current salary
+- `GET /api/employees?search=&department=&country=&band=&page=&size=&sort=` → paginated,
+  sortable directory. `sort` accepts any Employee column (including nested
+  ones like `department.name`) plus the synthetic `currentSalaryAmount`,
+  which is resolved via a correlated subquery rather than a plain column
+  since salary lives in `salary_record`, not `employee`.
+- `GET /api/employees/{id}` → profile + current salary, including a
+  `belowBandAverage` flag (paid >15% under their job band's org-wide
+  average) as a basic pay-equity signal
 - `GET /api/employees/{id}/salary-history` → ordered list of SalaryRecord
 - `POST /api/employees/{id}/salary-adjustments` → append a SalaryRecord
 - `GET /api/analytics/summary` → headcount/payroll by dept & country, band pay ranges, currency-normalized totals
+- `GET /api/analytics/recent-changes?limit=` → last N salary adjustments org-wide, newest first
 - `GET /api/employees/export` → CSV of current filtered view
 - `GET /api/reference/departments`, `GET /api/reference/countries` → lookups for the UI's filter dropdowns
 
