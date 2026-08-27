@@ -20,13 +20,14 @@ services:
       - key: ADMIN_USERNAME
         value: hr.manager
       - key: ADMIN_PASSWORD
-        generateValue: true
-      # Was true only for the very first deploy so the 10k-employee dataset
-      # got created; now flipped back to false per the original intent,
-      # since seeding has completed and there's no need to re-check on
-      # every restart.
+        value: ChangeMe123!
+      # Left true permanently: the 10k-employee seed is a fast no-op once
+      # already seeded (a single count query), and the admin-login sync
+      # (create-or-update-password) needs this to run on every boot so
+      # rotating ADMIN_PASSWORD and restarting is enough to change the
+      # live login, without touching the database directly.
       - key: SEED_ON_STARTUP
-        value: "false"
+        value: "true"
       - key: CORS_ALLOWED_ORIGINS
         value: https://salary-management-incubyte-intervie.vercel.app
       - key: DB_HOST

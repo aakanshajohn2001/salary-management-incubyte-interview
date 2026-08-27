@@ -31,11 +31,13 @@ import java.util.Map;
 import java.util.Random;
 
 /**
- * Generates the 10,000-employee dataset the assessment asks for. Runs once,
- * only when {@code app.seed.enabled=true} (SEED_ON_STARTUP env var), and is
- * idempotent -- it skips employee generation if the employee table already
- * has rows, so restarting the app with seeding still enabled never
- * duplicates data.
+ * Generates the 10,000-employee dataset the assessment asks for, and keeps
+ * the single admin login in sync with the configured credentials. Runs on
+ * every boot when {@code app.seed.enabled=true} (SEED_ON_STARTUP env var).
+ * Employee generation is idempotent -- it skips if the employee table
+ * already has rows, so restarting never duplicates data. The admin login is
+ * an upsert -- its password is synced to ADMIN_PASSWORD on every run, so
+ * rotating that env var and restarting is enough to change the live login.
  *
  * A fixed random seed makes the generated dataset reproducible across runs
  * and environments, which is useful for demos and bug reports ("employee
@@ -116,17 +118,27 @@ public class SeedRunner implements ApplicationRunner {
         seedEmployees();
     }
 
+    /**
+     * Ensures the configured admin login exists with the configured
+     * password -- an upsert rather than a create-once, so rotating
+     * ADMIN_PASSWORD and restarting is enough to change the live
+     * password, without needing to touch the database directly.
+     */
     private void seedAdminUser() {
         Integer count = jdbcTemplate.queryForObject(
                 "select count(*) from app_user where username = ?", Integer.class, adminProperties.username());
+        String passwordHash = passwordEncoder.encode(adminProperties.password());
         if (count != null && count > 0) {
-            log.info("Admin user '{}' already exists, skipping.", adminProperties.username());
+            jdbcTemplate.update(
+                    "update app_user set password_hash = ? where username = ?",
+                    passwordHash, adminProperties.username());
+            log.info("Admin user '{}' already exists, synced password to current config.", adminProperties.username());
             return;
         }
         jdbcTemplate.update(
                 "insert into app_user (username, password_hash, role, created_at) values (?, ?, ?, ?)",
                 adminProperties.username(),
-                passwordEncoder.encode(adminProperties.password()),
+                passwordHash,
                 Role.HR_MANAGER.name(),
                 Timestamp.from(Instant.now()));
         log.info("Created HR manager login '{}'.", adminProperties.username());
