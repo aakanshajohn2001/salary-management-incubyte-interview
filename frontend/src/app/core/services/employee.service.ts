@@ -25,8 +25,24 @@ export class EmployeeService {
     return this.http.get<SalaryHistoryEntry[]>(`${this.baseUrl}/${id}/salary-history`);
   }
 
+  /**
+   * Fetched through HttpClient (not a plain link/window.open) so the auth
+   * interceptor attaches the bearer token -- a direct navigation couldn't
+   * carry an Authorization header.
+   */
+  exportCsv(filter: EmployeeFilter): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/export`, {
+      params: this.buildFilterParams(filter),
+      responseType: 'blob',
+    });
+  }
+
   private buildParams(filter: EmployeeFilter, page: number, size: number): HttpParams {
-    let params = new HttpParams().set('page', page).set('size', size);
+    return this.buildFilterParams(filter).set('page', page).set('size', size);
+  }
+
+  private buildFilterParams(filter: EmployeeFilter): HttpParams {
+    let params = new HttpParams();
     if (filter.search) {
       params = params.set('search', filter.search);
     }

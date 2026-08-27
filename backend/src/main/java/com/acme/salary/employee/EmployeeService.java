@@ -6,6 +6,7 @@ import com.acme.salary.compensation.SalaryRecordRepository;
 import com.acme.salary.common.PageResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
@@ -30,6 +31,31 @@ public class EmployeeService {
 
     public PageResponse<EmployeeDto> listEmployees(String search, Long departmentId, String countryCode,
                                                     JobBand jobBand, EmployeeStatus status, Pageable pageable) {
+        Specification<Employee> spec = buildSpecification(search, departmentId, countryCode, jobBand, status);
+        Page<Employee> page = employeeRepository.findAll(spec, pageable);
+
+        Map<Long, SalaryRecord> currentSalaryByEmployeeId = currentSalaryByEmployeeId(page.getContent());
+        Page<EmployeeDto> dtoPage = page.map(e -> EmployeeMapper.toDto(e, currentSalaryByEmployeeId.get(e.getId())));
+        return PageResponse.from(dtoPage);
+    }
+
+    /**
+     * Same filters as the directory listing, but unpaginated -- backs the CSV
+     * export, which needs every matching row rather than one page of it.
+     */
+    public List<EmployeeDto> exportEmployees(String search, Long departmentId, String countryCode,
+                                              JobBand jobBand, EmployeeStatus status) {
+        Specification<Employee> spec = buildSpecification(search, departmentId, countryCode, jobBand, status);
+        List<Employee> employees = employeeRepository.findAll(spec, Sort.by("id"));
+
+        Map<Long, SalaryRecord> currentSalaryByEmployeeId = currentSalaryByEmployeeId(employees);
+        return employees.stream()
+                .map(e -> EmployeeMapper.toDto(e, currentSalaryByEmployeeId.get(e.getId())))
+                .toList();
+    }
+
+    private Specification<Employee> buildSpecification(String search, Long departmentId, String countryCode,
+                                                         JobBand jobBand, EmployeeStatus status) {
         List<Specification<Employee>> filters = Stream.of(
                         EmployeeSpecifications.search(search),
                         EmployeeSpecifications.departmentId(departmentId),
@@ -38,18 +64,15 @@ public class EmployeeService {
                         EmployeeSpecifications.status(status))
                 .filter(java.util.Objects::nonNull)
                 .collect(Collectors.toCollection(ArrayList::new));
-        Specification<Employee> spec = Specification.allOf(filters);
+        return Specification.allOf(filters);
+    }
 
-        Page<Employee> page = employeeRepository.findAll(spec, pageable);
-
-        List<Long> employeeIds = page.getContent().stream().map(Employee::getId).toList();
-        Map<Long, SalaryRecord> currentSalaryByEmployeeId = employeeIds.isEmpty()
+    private Map<Long, SalaryRecord> currentSalaryByEmployeeId(List<Employee> employees) {
+        List<Long> employeeIds = employees.stream().map(Employee::getId).toList();
+        return employeeIds.isEmpty()
                 ? Map.of()
                 : salaryRecordRepository.findCurrentForEmployees(employeeIds).stream()
                         .collect(Collectors.toMap(sr -> sr.getEmployee().getId(), Function.identity()));
-
-        Page<EmployeeDto> dtoPage = page.map(e -> EmployeeMapper.toDto(e, currentSalaryByEmployeeId.get(e.getId())));
-        return PageResponse.from(dtoPage);
     }
 
     public EmployeeDto getEmployee(Long id) {

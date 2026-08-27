@@ -3,6 +3,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { debounceTime } from 'rxjs';
+import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
@@ -21,6 +22,7 @@ import { ReferenceDataService } from '../../core/services/reference-data.service
   imports: [
     ReactiveFormsModule,
     DecimalPipe,
+    MatButtonModule,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
@@ -41,6 +43,7 @@ export class EmployeeDirectoryComponent implements OnInit {
   readonly jobBands = JOB_BANDS;
 
   readonly loading = signal(false);
+  readonly exporting = signal(false);
   readonly pageData = signal<PageResponse<Employee> | null>(null);
   readonly departments = signal<Department[]>([]);
   readonly countries = signal<Country[]>([]);
@@ -94,5 +97,33 @@ export class EmployeeDirectoryComponent implements OnInit {
 
   openEmployee(id: number): void {
     this.router.navigate(['/employees', id]);
+  }
+
+  exportCsv(): void {
+    const raw = this.filterForm.getRawValue();
+    const filter: EmployeeFilter = {
+      search: raw.search || undefined,
+      departmentId: raw.departmentId ?? undefined,
+      countryCode: raw.countryCode || undefined,
+      jobBand: raw.jobBand || undefined,
+    };
+
+    this.exporting.set(true);
+    this.employeeService.exportCsv(filter).subscribe({
+      next: (blob) => {
+        this.exporting.set(false);
+        this.downloadBlob(blob, 'employees.csv');
+      },
+      error: () => this.exporting.set(false),
+    });
+  }
+
+  private downloadBlob(blob: Blob, filename: string): void {
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.click();
+    URL.revokeObjectURL(url);
   }
 }

@@ -1,4 +1,9 @@
-<h1>Employees</h1>
+<div class="page-header">
+  <h1>Employees</h1>
+  <button mat-stroked-button (click)="exportCsv()" [disabled]="exporting()" data-testid="export-csv">
+    {{ exporting() ? 'Exporting…' : 'Export CSV' }}
+  </button>
+</div>
 
 <form [formGroup]="filterForm" class="filters">
   <mat-form-field appearance="outline">
