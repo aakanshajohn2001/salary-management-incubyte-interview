@@ -4,6 +4,8 @@ import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { provideNativeDateAdapter } from '@angular/material/core';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { of } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { Employee } from '../../core/models/employee.model';
@@ -35,6 +37,7 @@ describe('EmployeeDetailComponent', () => {
   let httpMock: HttpTestingController;
   let navigateSpy: ReturnType<typeof vi.fn>;
   let dialogOpenSpy: ReturnType<typeof vi.fn>;
+  let snackBarOpenSpy: ReturnType<typeof vi.fn>;
 
   function flushInitialLoad(): void {
     httpMock.expectOne(`${environment.apiBaseUrl}/employees/1`).flush(EMPLOYEE);
@@ -44,6 +47,7 @@ describe('EmployeeDetailComponent', () => {
   beforeEach(() => {
     navigateSpy = vi.fn();
     dialogOpenSpy = vi.fn();
+    snackBarOpenSpy = vi.fn();
 
     TestBed.configureTestingModule({
       imports: [EmployeeDetailComponent],
@@ -51,6 +55,7 @@ describe('EmployeeDetailComponent', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         provideNativeDateAdapter(),
+        provideNoopAnimations(),
         { provide: Router, useValue: { navigate: navigateSpy } },
         {
           provide: ActivatedRoute,
@@ -58,10 +63,11 @@ describe('EmployeeDetailComponent', () => {
         },
       ],
     });
-    // MatDialogModule (imported by the component itself) provides its own
-    // MatDialog in a child injector that shadows a plain `providers` override,
-    // so this needs overrideProvider rather than a `provide` entry above.
+    // MatDialogModule/MatSnackBarModule (imported by the component itself)
+    // provide their own services in a child injector that shadows a plain
+    // `providers` override, so these need overrideProvider instead.
     TestBed.overrideProvider(MatDialog, { useValue: { open: dialogOpenSpy } });
+    TestBed.overrideProvider(MatSnackBar, { useValue: { open: snackBarOpenSpy } });
     httpMock = TestBed.inject(HttpTestingController);
   });
 
@@ -84,20 +90,33 @@ describe('EmployeeDetailComponent', () => {
     expect(text).toContain('Initial hire');
   });
 
-  it('opens the adjustment dialog with the employee id and currency, and reloads on success', () => {
+  it('opens the adjustment dialog with the employee id and currency, shows a snackbar, and reloads on success', () => {
     const fixture = TestBed.createComponent(EmployeeDetailComponent);
     fixture.detectChanges();
     flushInitialLoad();
 
-    dialogOpenSpy.mockReturnValue({ afterClosed: () => of(true) });
+    const created = {
+      id: 3,
+      amount: 180000,
+      currencyCode: 'USD',
+      effectiveDate: '2026-06-01',
+      reason: 'Promotion',
+      createdAt: '2026-06-01T00:00:00Z',
+    };
+    dialogOpenSpy.mockReturnValue({ afterClosed: () => of(created) });
     fixture.componentInstance.openAdjustmentDialog();
 
     expect(dialogOpenSpy).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ data: { employeeId: 1, currentCurrency: 'USD' } }),
     );
+    expect(snackBarOpenSpy).toHaveBeenCalledWith(
+      expect.stringContaining('180,000 USD'),
+      'Dismiss',
+      { duration: 5000 },
+    );
 
-    // afterClosed(true) triggers a reload
+    // afterClosed(created) triggers a reload
     flushInitialLoad();
   });
 

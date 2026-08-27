@@ -41,7 +41,7 @@ describe('SalaryAdjustmentDialogComponent', () => {
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('required');
   });
 
-  it('posts the adjustment and closes the dialog with true on success', () => {
+  it('posts the adjustment and closes the dialog with the created entry on success', () => {
     const fixture = TestBed.createComponent(SalaryAdjustmentDialogComponent);
     fixture.detectChanges();
 
@@ -54,9 +54,10 @@ describe('SalaryAdjustmentDialogComponent', () => {
 
     const req = httpMock.expectOne(`${environment.apiBaseUrl}/employees/42/salary-adjustments`);
     expect(req.request.body).toEqual({ amount: 165000, effectiveDate: '2026-01-01', reason: 'Annual raise' });
-    req.flush({ id: 1, amount: 165000, currencyCode: 'USD', effectiveDate: '2026-01-01', reason: 'Annual raise', createdAt: '2026-01-01T00:00:00Z' });
+    const created = { id: 1, amount: 165000, currencyCode: 'USD', effectiveDate: '2026-01-01', reason: 'Annual raise', createdAt: '2026-01-01T00:00:00Z' };
+    req.flush(created);
 
-    expect(dialogRefStub.close).toHaveBeenCalledWith(true);
+    expect(dialogRefStub.close).toHaveBeenCalledWith(created);
     expect(fixture.componentInstance.errorMessage()).toBeNull();
   });
 

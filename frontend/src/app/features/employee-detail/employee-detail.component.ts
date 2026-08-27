@@ -7,6 +7,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
 import { Employee } from '../../core/models/employee.model';
 import { SalaryHistoryEntry } from '../../core/models/salary.model';
@@ -33,6 +34,7 @@ export class EmployeeDetailComponent implements OnInit {
   private readonly employeeService = inject(EmployeeService);
   private readonly dialog = inject(MatDialog);
   private readonly router = inject(Router);
+  private readonly snackBar = inject(MatSnackBar);
 
   readonly displayedColumns = ['effectiveDate', 'amount', 'reason'];
   readonly employee = signal<Employee | null>(null);
@@ -72,6 +74,11 @@ export class EmployeeDetailComponent implements OnInit {
     });
     ref.afterClosed().subscribe((created) => {
       if (created) {
+        this.snackBar.open(
+          `Salary updated to ${created.amount.toLocaleString()} ${created.currencyCode}, effective ${created.effectiveDate}`,
+          'Dismiss',
+          { duration: 5000 },
+        );
         this.load();
       }
     });

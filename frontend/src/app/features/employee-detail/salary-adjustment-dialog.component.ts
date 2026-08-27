@@ -7,6 +7,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { SalaryService } from '../../core/services/salary.service';
+import { SalaryHistoryEntry } from '../../core/models/salary.model';
 import { toIsoDate } from '../../core/utils/date.util';
 import { extractErrorMessage } from '../../core/utils/http-error.util';
 
@@ -33,7 +34,7 @@ export interface SalaryAdjustmentDialogData {
 export class SalaryAdjustmentDialogComponent {
   private readonly fb = inject(FormBuilder);
   private readonly salaryService = inject(SalaryService);
-  private readonly dialogRef = inject(MatDialogRef<SalaryAdjustmentDialogComponent>);
+  private readonly dialogRef = inject(MatDialogRef<SalaryAdjustmentDialogComponent, SalaryHistoryEntry | false>);
   readonly data = inject<SalaryAdjustmentDialogData>(MAT_DIALOG_DATA);
 
   readonly submitting = signal(false);
@@ -62,9 +63,9 @@ export class SalaryAdjustmentDialogComponent {
         reason: raw.reason,
       })
       .subscribe({
-        next: () => {
+        next: (created) => {
           this.submitting.set(false);
-          this.dialogRef.close(true);
+          this.dialogRef.close(created);
         },
         error: (error: unknown) => {
           this.submitting.set(false);
