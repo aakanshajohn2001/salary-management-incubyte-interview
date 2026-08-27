@@ -21,13 +21,14 @@ services:
         value: hr.manager
       - key: ADMIN_PASSWORD
         generateValue: true
-      # true only for the very first deploy so the 10k-employee dataset gets
-      # created; the seeder is idempotent, but this still gets flipped back
-      # to false afterwards to avoid re-checking on every restart.
+      # Was true only for the very first deploy so the 10k-employee dataset
+      # got created; now flipped back to false per the original intent,
+      # since seeding has completed and there's no need to re-check on
+      # every restart.
       - key: SEED_ON_STARTUP
-        value: "true"
+        value: "false"
       - key: CORS_ALLOWED_ORIGINS
-        value: https://acme-salary.vercel.app
+        value: https://salary-management-incubyte-intervie.vercel.app
       - key: DB_HOST
         fromDatabase:
           name: acme-salary-db
