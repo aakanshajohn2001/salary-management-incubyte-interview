@@ -5,11 +5,13 @@ import com.acme.salary.compensation.SalaryRecord;
 import com.acme.salary.compensation.SalaryRecordRepository;
 import com.acme.salary.common.PageResponse;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +22,14 @@ import java.util.stream.Stream;
 
 @Service
 public class EmployeeService {
+
+    /**
+     * Column id the frontend sorts the directory table's "Current salary"
+     * column by. Not a real Employee property (salary lives in the
+     * append-only salary_record table), so it's intercepted before reaching
+     * the JPA Specification/Pageable path -- see listEmployees.
+     */
+    static final String CURRENT_SALARY_SORT_PROPERTY = "currentSalaryAmount";
 
     private final EmployeeRepository employeeRepository;
     private final SalaryRecordRepository salaryRecordRepository;
@@ -32,10 +42,20 @@ public class EmployeeService {
     public PageResponse<EmployeeDto> listEmployees(String search, Long departmentId, String countryCode,
                                                     JobBand jobBand, EmployeeStatus status, Pageable pageable) {
         Specification<Employee> spec = buildSpecification(search, departmentId, countryCode, jobBand, status);
-        Page<Employee> page = employeeRepository.findAll(spec, pageable);
+
+        Sort.Order salarySort = pageable.getSort().getOrderFor(CURRENT_SALARY_SORT_PROPERTY);
+        Pageable effectivePageable = pageable;
+        if (salarySort != null) {
+            spec = spec.and(EmployeeSpecifications.orderByCurrentSalaryUsd(salarySort.getDirection()));
+            effectivePageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
+        }
+
+        Page<Employee> page = employeeRepository.findAll(spec, effectivePageable);
 
         Map<Long, SalaryRecord> currentSalaryByEmployeeId = currentSalaryByEmployeeId(page.getContent());
-        Page<EmployeeDto> dtoPage = page.map(e -> EmployeeMapper.toDto(e, currentSalaryByEmployeeId.get(e.getId())));
+        Map<JobBand, BigDecimal> bandAverageUsd = bandAverageUsd();
+        Page<EmployeeDto> dtoPage = page.map(e -> EmployeeMapper.toDto(
+                e, currentSalaryByEmployeeId.get(e.getId()), bandAverageUsd.get(e.getJobBand())));
         return PageResponse.from(dtoPage);
     }
 
@@ -49,9 +69,16 @@ public class EmployeeService {
         List<Employee> employees = employeeRepository.findAll(spec, Sort.by("id"));
 
         Map<Long, SalaryRecord> currentSalaryByEmployeeId = currentSalaryByEmployeeId(employees);
+        Map<JobBand, BigDecimal> bandAverageUsd = bandAverageUsd();
         return employees.stream()
-                .map(e -> EmployeeMapper.toDto(e, currentSalaryByEmployeeId.get(e.getId())))
+                .map(e -> EmployeeMapper.toDto(e, currentSalaryByEmployeeId.get(e.getId()), bandAverageUsd.get(e.getJobBand())))
                 .toList();
+    }
+
+    private Map<JobBand, BigDecimal> bandAverageUsd() {
+        return salaryRecordRepository.averageCurrentSalaryUsdByJobBand().stream()
+                .collect(Collectors.toMap(SalaryRecordRepository.JobBandAverage::getJobBand,
+                        SalaryRecordRepository.JobBandAverage::getAverageUsd));
     }
 
     private Specification<Employee> buildSpecification(String search, Long departmentId, String countryCode,
@@ -80,7 +107,8 @@ public class EmployeeService {
                 .orElseThrow(() -> new NoSuchElementException("Employee " + id + " not found"));
         List<SalaryRecord> history = salaryRecordRepository.findHistoryByEmployeeId(id);
         SalaryRecord current = history.isEmpty() ? null : history.get(0);
-        return EmployeeMapper.toDto(employee, current);
+        BigDecimal bandAverageUsd = bandAverageUsd().get(employee.getJobBand());
+        return EmployeeMapper.toDto(employee, current, bandAverageUsd);
     }
 
     public List<SalaryHistoryEntryDto> getSalaryHistory(Long id) {

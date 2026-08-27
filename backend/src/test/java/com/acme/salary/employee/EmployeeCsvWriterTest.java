@@ -14,7 +14,7 @@ class EmployeeCsvWriterTest {
     void write_rendersHeaderAndOneRowPerEmployee() {
         EmployeeDto ada = new EmployeeDto(1L, "Ada", "Lovelace", "ada@acme.example", "Engineering",
                 "US", "United States", "L5", LocalDate.of(2020, 1, 1), "ACTIVE",
-                new BigDecimal("150000.00"), "USD", LocalDate.of(2020, 1, 1));
+                new BigDecimal("150000.00"), "USD", LocalDate.of(2020, 1, 1), false);
 
         String csv = EmployeeCsvWriter.write(List.of(ada));
 
@@ -27,7 +27,7 @@ class EmployeeCsvWriterTest {
     void write_quotesFieldsContainingCommasOrQuotes() {
         EmployeeDto withComma = new EmployeeDto(2L, "Bob", "O, Brian", "bob@acme.example", "Sales, EMEA",
                 "GB", "United Kingdom", "L2", LocalDate.of(2021, 1, 1), "ACTIVE",
-                new BigDecimal("60000.00"), "GBP", LocalDate.of(2021, 1, 1));
+                new BigDecimal("60000.00"), "GBP", LocalDate.of(2021, 1, 1), true);
 
         String csv = EmployeeCsvWriter.write(List.of(withComma));
 
@@ -38,7 +38,7 @@ class EmployeeCsvWriterTest {
     @Test
     void write_rendersEmptyColumnsWhenNoSalaryRecordExists() {
         EmployeeDto noSalary = new EmployeeDto(3L, "Grace", "Hopper", "grace@acme.example", "Sales",
-                "US", "United States", "L4", LocalDate.of(2020, 1, 1), "ACTIVE", null, null, null);
+                "US", "United States", "L4", LocalDate.of(2020, 1, 1), "ACTIVE", null, null, null, null);
 
         String csv = EmployeeCsvWriter.write(List.of(noSalary));
 

@@ -24,6 +24,16 @@
           <span class="label">Current salary</span>
           @if (employee.currentSalaryAmount != null) {
             {{ employee.currentSalaryAmount | number: '1.2-2' }} {{ employee.currentSalaryCurrency }}
+            @if (employee.belowBandAverage) {
+              <mat-icon
+                class="equity-flag"
+                matTooltip="Paid notably below this job band's org-wide average -- possible pay-equity outlier"
+                aria-label="Below band average"
+                data-testid="below-band-average-flag"
+              >
+                flag
+              </mat-icon>
+            }
           } @else {
             &mdash;
           }

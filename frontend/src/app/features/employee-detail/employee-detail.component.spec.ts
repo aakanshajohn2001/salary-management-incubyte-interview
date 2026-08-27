@@ -26,6 +26,7 @@ const EMPLOYEE: Employee = {
   currentSalaryAmount: 165000,
   currentSalaryCurrency: 'USD',
   currentSalaryEffectiveDate: '2022-01-01',
+  belowBandAverage: false,
 };
 
 const HISTORY: SalaryHistoryEntry[] = [
@@ -88,6 +89,17 @@ describe('EmployeeDetailComponent', () => {
     expect(text).toContain('Lovelace');
     expect(text).toContain('Annual raise');
     expect(text).toContain('Initial hire');
+  });
+
+  it('shows the below-band-average flag when the employee is flagged as an outlier', () => {
+    const fixture = TestBed.createComponent(EmployeeDetailComponent);
+    fixture.detectChanges();
+    httpMock.expectOne(`${environment.apiBaseUrl}/employees/1`).flush({ ...EMPLOYEE, belowBandAverage: true });
+    httpMock.expectOne(`${environment.apiBaseUrl}/employees/1/salary-history`).flush(HISTORY);
+    fixture.detectChanges();
+
+    const flag = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="below-band-average-flag"]');
+    expect(flag).not.toBeNull();
   });
 
   it('opens the adjustment dialog with the employee id and currency, shows a snackbar, and reloads on success', () => {

@@ -5,12 +5,15 @@ import { Router } from '@angular/router';
 import { debounceTime } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTableModule } from '@angular/material/table';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { Employee, EmployeeFilter } from '../../core/models/employee.model';
+import { MatSortModule, Sort } from '@angular/material/sort';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { Employee, EmployeeFilter, EmployeeSort } from '../../core/models/employee.model';
 import { PageResponse } from '../../core/models/page-response.model';
 import { Country, Department, JOB_BANDS } from '../../core/models/reference.model';
 import { EmployeeService } from '../../core/services/employee.service';
@@ -24,11 +27,14 @@ import { ReferenceDataService } from '../../core/services/reference-data.service
     DecimalPipe,
     MatButtonModule,
     MatFormFieldModule,
+    MatIconModule,
     MatInputModule,
     MatSelectModule,
     MatTableModule,
     MatPaginatorModule,
     MatProgressBarModule,
+    MatSortModule,
+    MatTooltipModule,
   ],
   templateUrl: './employee-directory.component.html',
   styleUrl: './employee-directory.component.scss',
@@ -41,6 +47,16 @@ export class EmployeeDirectoryComponent implements OnInit {
 
   readonly displayedColumns = ['name', 'department', 'country', 'jobBand', 'salary', 'status'];
   readonly jobBands = JOB_BANDS;
+
+  /** Maps a mat-sort column id to the backend Sort property it corresponds to. */
+  private readonly sortPropertyByColumn: Record<string, string> = {
+    name: 'lastName',
+    department: 'department.name',
+    country: 'country.name',
+    jobBand: 'jobBand',
+    salary: 'currentSalaryAmount',
+    status: 'status',
+  };
 
   readonly loading = signal(false);
   readonly exporting = signal(false);
@@ -57,6 +73,7 @@ export class EmployeeDirectoryComponent implements OnInit {
 
   private page = 0;
   private pageSize = 25;
+  private sort: EmployeeSort | null = null;
 
   ngOnInit(): void {
     this.referenceDataService.departments().subscribe((departments) => this.departments.set(departments));
@@ -80,7 +97,7 @@ export class EmployeeDirectoryComponent implements OnInit {
       jobBand: raw.jobBand || undefined,
     };
 
-    this.employeeService.list(filter, this.page, this.pageSize).subscribe({
+    this.employeeService.list(filter, this.page, this.pageSize, this.sort).subscribe({
       next: (data) => {
         this.pageData.set(data);
         this.loading.set(false);
@@ -92,6 +109,13 @@ export class EmployeeDirectoryComponent implements OnInit {
   onPageChange(event: PageEvent): void {
     this.page = event.pageIndex;
     this.pageSize = event.pageSize;
+    this.load();
+  }
+
+  onSortChange(sort: Sort): void {
+    const property = this.sortPropertyByColumn[sort.active];
+    this.sort = sort.direction && property ? { property, direction: sort.direction } : null;
+    this.page = 0;
     this.load();
   }
 

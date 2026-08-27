@@ -12,6 +12,7 @@ export interface Employee {
   currentSalaryAmount: number | null;
   currentSalaryCurrency: string | null;
   currentSalaryEffectiveDate: string | null;
+  belowBandAverage: boolean | null;
 }
 
 export interface EmployeeFilter {
@@ -20,4 +21,9 @@ export interface EmployeeFilter {
   countryCode?: string;
   jobBand?: string;
   status?: string;
+}
+
+export interface EmployeeSort {
+  property: string;
+  direction: 'asc' | 'desc';
 }

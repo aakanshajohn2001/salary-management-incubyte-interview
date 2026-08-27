@@ -62,6 +62,7 @@ describe('EmployeeDirectoryComponent', () => {
           currentSalaryAmount: 165000,
           currentSalaryCurrency: 'USD',
           currentSalaryEffectiveDate: '2022-01-01',
+          belowBandAverage: false,
         },
       ],
       page: 0,
@@ -75,6 +76,87 @@ describe('EmployeeDirectoryComponent', () => {
     expect(text).toContain('Ada');
     expect(text).toContain('165,000.00');
     expect(text).toContain('USD');
+  });
+
+  it('shows the below-band-average flag only for employees flagged as an outlier', () => {
+    const fixture = TestBed.createComponent(EmployeeDirectoryComponent);
+    fixture.detectChanges();
+    httpMock.expectOne(`${environment.apiBaseUrl}/reference/departments`).flush([{ id: 1, name: 'Engineering' }]);
+    httpMock.expectOne(`${environment.apiBaseUrl}/reference/countries`).flush([{ code: 'US', name: 'United States' }]);
+    httpMock.expectOne((req) => req.url === `${environment.apiBaseUrl}/employees`).flush({
+      content: [
+        {
+          id: 1,
+          firstName: 'Ada',
+          lastName: 'Lovelace',
+          email: 'ada@acme.example',
+          department: 'Engineering',
+          countryCode: 'US',
+          countryName: 'United States',
+          jobBand: 'L5',
+          hireDate: '2020-01-01',
+          status: 'ACTIVE',
+          currentSalaryAmount: 60000,
+          currentSalaryCurrency: 'USD',
+          currentSalaryEffectiveDate: '2022-01-01',
+          belowBandAverage: true,
+        },
+        {
+          id: 2,
+          firstName: 'Grace',
+          lastName: 'Hopper',
+          email: 'grace@acme.example',
+          department: 'Engineering',
+          countryCode: 'US',
+          countryName: 'United States',
+          jobBand: 'L5',
+          hireDate: '2020-01-01',
+          status: 'ACTIVE',
+          currentSalaryAmount: 200000,
+          currentSalaryCurrency: 'USD',
+          currentSalaryEffectiveDate: '2022-01-01',
+          belowBandAverage: false,
+        },
+      ],
+      page: 0,
+      size: 25,
+      totalElements: 2,
+      totalPages: 1,
+    });
+    fixture.detectChanges();
+
+    const flags = (fixture.nativeElement as HTMLElement).querySelectorAll('[data-testid="below-band-average-flag"]');
+    expect(flags.length).toBe(1);
+  });
+
+  it('onSortChange maps the clicked column to its backend sort property and reloads', () => {
+    const fixture = TestBed.createComponent(EmployeeDirectoryComponent);
+    fixture.detectChanges();
+    flushBootstrapRequests();
+
+    fixture.componentInstance.onSortChange({ active: 'salary', direction: 'desc' });
+
+    const req = httpMock.expectOne(
+      (r) => r.url === `${environment.apiBaseUrl}/employees` && r.params.get('sort') === 'currentSalaryAmount,desc',
+    );
+    req.flush({ content: [], page: 0, size: 25, totalElements: 0, totalPages: 0 });
+  });
+
+  it('onSortChange clears the sort when the column cycles back to unsorted', () => {
+    const fixture = TestBed.createComponent(EmployeeDirectoryComponent);
+    fixture.detectChanges();
+    flushBootstrapRequests();
+
+    fixture.componentInstance.onSortChange({ active: 'salary', direction: 'desc' });
+    httpMock
+      .expectOne((r) => r.url === `${environment.apiBaseUrl}/employees`)
+      .flush({ content: [], page: 0, size: 25, totalElements: 0, totalPages: 0 });
+
+    fixture.componentInstance.onSortChange({ active: 'salary', direction: '' });
+
+    const req = httpMock.expectOne((r) => r.url === `${environment.apiBaseUrl}/employees`);
+    expect(req.request.params.has('sort')).toBe(false);
+    req.flush({ content: [], page: 0, size: 25, totalElements: 0, totalPages: 0 });
   });
 
   it('load() sends the current filter form values as query params', () => {

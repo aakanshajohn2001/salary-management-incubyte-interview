@@ -218,4 +218,89 @@ class EmployeeControllerTest {
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+    void list_flagsEmployeesPaidWellBelowTheirBandAverage() throws Exception {
+        Department engineering = departmentRepository.findByName("Engineering").orElseThrow();
+        Country us = countryRepository.findById("US").orElseThrow();
+        Currency usd = currencyRepository.findById("USD").orElseThrow();
+
+        // Ada is already L5/165000 from setUp. Add two more L5s so the band
+        // average (415000/3 = 138333.33, threshold 117583.33) puts the
+        // underpaid employee below it and the well-paid one above it.
+        var wellPaid = employeeRepository.save(new Employee("Well", "Paid", "well.paid@acme-corp.example",
+                engineering, us, JobBand.L5, LocalDate.of(2020, 1, 1), EmployeeStatus.ACTIVE));
+        salaryRecordRepository.save(new SalaryRecord(wellPaid, new BigDecimal("200000.00"), usd,
+                LocalDate.of(2020, 1, 1), "Initial hire"));
+
+        var underpaid = employeeRepository.save(new Employee("Under", "Paid", "under.paid@acme-corp.example",
+                engineering, us, JobBand.L5, LocalDate.of(2020, 1, 1), EmployeeStatus.ACTIVE));
+        salaryRecordRepository.save(new SalaryRecord(underpaid, new BigDecimal("50000.00"), usd,
+                LocalDate.of(2020, 1, 1), "Initial hire"));
+
+        mockMvc.perform(get("/api/employees").param("jobBand", "L5").param("size", "10")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(3))
+                .andExpect(jsonPath("$.content[0].email").value("ada.lovelace@acme-corp.example"))
+                .andExpect(jsonPath("$.content[0].belowBandAverage").value(false))
+                .andExpect(jsonPath("$.content[1].email").value("well.paid@acme-corp.example"))
+                .andExpect(jsonPath("$.content[1].belowBandAverage").value(false))
+                .andExpect(jsonPath("$.content[2].email").value("under.paid@acme-corp.example"))
+                .andExpect(jsonPath("$.content[2].belowBandAverage").value(true));
+    }
+
+    @Test
+    void list_sortedByCurrentSalaryAmountDescending_ordersHighestPaidFirst() throws Exception {
+        Department engineering = departmentRepository.findByName("Engineering").orElseThrow();
+        Country us = countryRepository.findById("US").orElseThrow();
+        Currency usd = currencyRepository.findById("USD").orElseThrow();
+
+        var lowest = employeeRepository.save(new Employee("Lowest", "Paid", "lowest.paid@acme-corp.example",
+                engineering, us, JobBand.L1, LocalDate.of(2020, 1, 1), EmployeeStatus.ACTIVE));
+        salaryRecordRepository.save(new SalaryRecord(lowest, new BigDecimal("40000.00"), usd,
+                LocalDate.of(2020, 1, 1), "Initial hire"));
+
+        var highest = employeeRepository.save(new Employee("Highest", "Paid", "highest.paid@acme-corp.example",
+                engineering, us, JobBand.L6, LocalDate.of(2020, 1, 1), EmployeeStatus.ACTIVE));
+        salaryRecordRepository.save(new SalaryRecord(highest, new BigDecimal("300000.00"), usd,
+                LocalDate.of(2020, 1, 1), "Initial hire"));
+
+        // Scoped to Engineering so Grace (Sales, no salary record) doesn't
+        // introduce a null-salary row into the ordering being asserted on.
+        Long engineeringId = engineering.getId();
+
+        mockMvc.perform(get("/api/employees").param("departmentId", engineeringId.toString())
+                        .param("sort", "currentSalaryAmount,desc")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].email").value("highest.paid@acme-corp.example"))
+                .andExpect(jsonPath("$.content[1].email").value("ada.lovelace@acme-corp.example"))
+                .andExpect(jsonPath("$.content[2].email").value("lowest.paid@acme-corp.example"));
+
+        mockMvc.perform(get("/api/employees").param("departmentId", engineeringId.toString())
+                        .param("sort", "currentSalaryAmount,asc")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].email").value("lowest.paid@acme-corp.example"))
+                .andExpect(jsonPath("$.content[2].email").value("highest.paid@acme-corp.example"));
+    }
+
+    @Test
+    void list_sortedByLastNameDescending_ordersAlphabeticallyReversed() throws Exception {
+        mockMvc.perform(get("/api/employees").param("sort", "lastName,desc")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].email").value("ada.lovelace@acme-corp.example"))
+                .andExpect(jsonPath("$.content[1].email").value("grace.hopper@acme-corp.example"));
+    }
+
+    @Test
+    void list_sortedByDepartmentNameAscending_ordersByJoinedEntityProperty() throws Exception {
+        mockMvc.perform(get("/api/employees").param("sort", "department.name,asc")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].email").value("ada.lovelace@acme-corp.example"))
+                .andExpect(jsonPath("$.content[1].email").value("grace.hopper@acme-corp.example"));
+    }
 }

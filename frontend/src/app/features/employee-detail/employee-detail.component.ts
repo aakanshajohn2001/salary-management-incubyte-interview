@@ -9,6 +9,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { Employee } from '../../core/models/employee.model';
 import { SalaryHistoryEntry } from '../../core/models/salary.model';
 import { EmployeeService } from '../../core/services/employee.service';
@@ -25,6 +26,7 @@ import { SalaryAdjustmentDialogComponent } from './salary-adjustment-dialog.comp
     MatIconModule,
     MatProgressBarModule,
     MatTableModule,
+    MatTooltipModule,
   ],
   templateUrl: './employee-detail.component.html',
   styleUrl: './employee-detail.component.scss',

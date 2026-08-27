@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { Employee, EmployeeFilter } from '../models/employee.model';
+import { Employee, EmployeeFilter, EmployeeSort } from '../models/employee.model';
 import { PageResponse } from '../models/page-response.model';
 import { SalaryHistoryEntry } from '../models/salary.model';
 
@@ -11,10 +11,17 @@ export class EmployeeService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = `${environment.apiBaseUrl}/employees`;
 
-  list(filter: EmployeeFilter, page: number, size: number): Observable<PageResponse<Employee>> {
-    return this.http.get<PageResponse<Employee>>(this.baseUrl, {
-      params: this.buildParams(filter, page, size),
-    });
+  list(
+    filter: EmployeeFilter,
+    page: number,
+    size: number,
+    sort?: EmployeeSort | null,
+  ): Observable<PageResponse<Employee>> {
+    let params = this.buildParams(filter, page, size);
+    if (sort) {
+      params = params.set('sort', `${sort.property},${sort.direction}`);
+    }
+    return this.http.get<PageResponse<Employee>>(this.baseUrl, { params });
   }
 
   get(id: number): Observable<Employee> {

@@ -16,6 +16,7 @@ public record EmployeeDto(
         String status,
         BigDecimal currentSalaryAmount,
         String currentSalaryCurrency,
-        LocalDate currentSalaryEffectiveDate
+        LocalDate currentSalaryEffectiveDate,
+        Boolean belowBandAverage
 ) {
 }
