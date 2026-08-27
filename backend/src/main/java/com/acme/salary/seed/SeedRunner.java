@@ -13,6 +13,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -96,13 +98,16 @@ public class SeedRunner implements ApplicationRunner {
     private final PasswordEncoder passwordEncoder;
     private final SeedProperties seedProperties;
     private final AdminProperties adminProperties;
+    private final TransactionTemplate transactionTemplate;
 
     public SeedRunner(JdbcTemplate jdbcTemplate, PasswordEncoder passwordEncoder,
-                       SeedProperties seedProperties, AdminProperties adminProperties) {
+                       SeedProperties seedProperties, AdminProperties adminProperties,
+                       PlatformTransactionManager transactionManager) {
         this.jdbcTemplate = jdbcTemplate;
         this.passwordEncoder = passwordEncoder;
         this.seedProperties = seedProperties;
         this.adminProperties = adminProperties;
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
     }
 
     @Override
@@ -134,8 +139,22 @@ public class SeedRunner implements ApplicationRunner {
             return;
         }
 
-        int total = seedProperties.employeeCount();
         long start = System.currentTimeMillis();
+        int total = transactionTemplate.execute(status -> seedEmployeesInTransaction());
+
+        log.info("Seeded {} employees with initial salary records in {} ms", total,
+                System.currentTimeMillis() - start);
+    }
+
+    /**
+     * Runs as a single transaction so a failure partway through (e.g. a
+     * driver-specific bug hit only against the real production database)
+     * leaves either zero employees or the full set -- never a partial
+     * count that would fool the "already seeded" check above into
+     * skipping the rest of the seed on the next startup.
+     */
+    private int seedEmployeesInTransaction() {
+        int total = seedProperties.employeeCount();
 
         List<Long> departmentIds = jdbcTemplate.queryForList("select id from department", Long.class);
         Map<String, String> currencyByCountry = queryCurrencyByCountry();
@@ -184,9 +203,7 @@ public class SeedRunner implements ApplicationRunner {
         if (!salaryBatch.isEmpty()) {
             jdbcTemplate.batchUpdate(INSERT_SALARY_SQL, salaryBatch);
         }
-
-        log.info("Seeded {} employees with initial salary records in {} ms", total,
-                System.currentTimeMillis() - start);
+        return total;
     }
 
     private long insertEmployee(String firstName, String lastName, String email, long departmentId,

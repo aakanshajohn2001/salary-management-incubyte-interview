@@ -15,9 +15,10 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.List;
 
 /**
- * Single-role, stateless JWT security: /api/auth/login is public, everything
- * else requires a valid bearer token. There is no session state and no CSRF
- * surface to protect since this is a pure JSON API with no cookie-based auth.
+ * Single-role, stateless JWT security: /api/auth/login and /api/health are
+ * public, everything else requires a valid bearer token. There is no session
+ * state and no CSRF surface to protect since this is a pure JSON API with no
+ * cookie-based auth.
  */
 @Configuration
 @EnableWebSecurity
@@ -39,7 +40,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/login").permitAll()
+                        .requestMatchers("/api/auth/login", "/api/health").permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(eh -> eh
                         .authenticationEntryPoint((req, res, ex) -> writeJsonError(res, 401, "Unauthorized"))
