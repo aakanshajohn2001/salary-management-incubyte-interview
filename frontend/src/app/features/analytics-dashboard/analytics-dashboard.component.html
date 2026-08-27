@@ -1,0 +1,86 @@
+<h1>Analytics</h1>
+
+@if (loading()) {
+  <mat-progress-bar mode="indeterminate" />
+}
+
+@if (summary(); as summary) {
+  <div class="stat-tiles">
+    <mat-card class="stat-tile">
+      <span class="stat-label">Active headcount</span>
+      <span class="stat-value">{{ summary.totalHeadcount | number }}</span>
+    </mat-card>
+    <mat-card class="stat-tile">
+      <span class="stat-label">Total payroll (USD)</span>
+      <span class="stat-value">{{ summary.totalPayrollUsd | number: '1.0-0' }}</span>
+    </mat-card>
+    <mat-card class="stat-tile">
+      <span class="stat-label">Average salary (USD)</span>
+      <span class="stat-value">{{ summary.averageSalaryUsd | number: '1.0-0' }}</span>
+    </mat-card>
+  </div>
+
+  <div class="charts-grid">
+    <mat-card class="chart-card">
+      <h2>Headcount by department</h2>
+      <ngx-charts-bar-vertical
+        [results]="headcountByDepartment()"
+        [xAxis]="true"
+        [yAxis]="true"
+        [showXAxisLabel]="false"
+        [showYAxisLabel]="false"
+        [view]="[600, 320]"
+      />
+    </mat-card>
+
+    <mat-card class="chart-card">
+      <h2>Total payroll (USD) by country</h2>
+      <ngx-charts-bar-horizontal
+        [results]="payrollByCountry()"
+        [xAxis]="true"
+        [yAxis]="true"
+        [showXAxisLabel]="false"
+        [showYAxisLabel]="false"
+        [view]="[600, 320]"
+      />
+    </mat-card>
+
+    <mat-card class="chart-card wide">
+      <h2>Pay by job band (USD)</h2>
+      <p class="chart-hint">A basic pay-equity view: average salary per band, with the full min&ndash;max range below.</p>
+      <ngx-charts-bar-vertical
+        [results]="averageSalaryByBand()"
+        [xAxis]="true"
+        [yAxis]="true"
+        [showXAxisLabel]="false"
+        [showYAxisLabel]="false"
+        [view]="[900, 300]"
+      />
+
+      <table mat-table [dataSource]="summary.byJobBand" class="band-table">
+        <ng-container matColumnDef="jobBand">
+          <th mat-header-cell *matHeaderCellDef>Band</th>
+          <td mat-cell *matCellDef="let band">{{ band.jobBand }}</td>
+        </ng-container>
+        <ng-container matColumnDef="headcount">
+          <th mat-header-cell *matHeaderCellDef>Headcount</th>
+          <td mat-cell *matCellDef="let band">{{ band.headcount | number }}</td>
+        </ng-container>
+        <ng-container matColumnDef="min">
+          <th mat-header-cell *matHeaderCellDef>Min (USD)</th>
+          <td mat-cell *matCellDef="let band">{{ band.minSalaryUsd | number: '1.0-0' }}</td>
+        </ng-container>
+        <ng-container matColumnDef="average">
+          <th mat-header-cell *matHeaderCellDef>Average (USD)</th>
+          <td mat-cell *matCellDef="let band">{{ band.averageSalaryUsd | number: '1.0-0' }}</td>
+        </ng-container>
+        <ng-container matColumnDef="max">
+          <th mat-header-cell *matHeaderCellDef>Max (USD)</th>
+          <td mat-cell *matCellDef="let band">{{ band.maxSalaryUsd | number: '1.0-0' }}</td>
+        </ng-container>
+        <tr mat-header-row *matHeaderRowDef="displayedBandColumns"></tr>
+        <tr mat-row *matRowDef="let band; columns: displayedBandColumns"></tr>
+      </table>
+    </mat-card>
+  </div>
+}
