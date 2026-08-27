@@ -1,0 +1,49 @@
+<h2 mat-dialog-title>Record a salary adjustment</h2>
+
+<form [formGroup]="form" (ngSubmit)="submit()">
+  <mat-dialog-content>
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>New amount{{ data.currentCurrency ? ' (' + data.currentCurrency + ')' : '' }}</mat-label>
+      <input matInput type="number" step="0.01" formControlName="amount" data-testid="amount-input" />
+      @if (form.controls.amount.hasError('required') && form.controls.amount.touched) {
+        <mat-error>Amount is required.</mat-error>
+      }
+      @if (form.controls.amount.hasError('min')) {
+        <mat-error>Amount must be positive.</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Effective date</mat-label>
+      <input matInput [matDatepicker]="picker" formControlName="effectiveDate" data-testid="effective-date-input" />
+      <mat-datepicker-toggle matIconSuffix [for]="picker" />
+      <mat-datepicker #picker />
+      @if (form.controls.effectiveDate.hasError('required') && form.controls.effectiveDate.touched) {
+        <mat-error>Effective date is required.</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Reason</mat-label>
+      <input matInput formControlName="reason" data-testid="reason-input" />
+      @if (form.controls.reason.hasError('required') && form.controls.reason.touched) {
+        <mat-error>Reason is required.</mat-error>
+      }
+    </mat-form-field>
+
+    @if (errorMessage()) {
+      <p class="error" data-testid="dialog-error">{{ errorMessage() }}</p>
+    }
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button type="button" (click)="cancel()">Cancel</button>
+    <button mat-flat-button color="primary" type="submit" [disabled]="submitting()" data-testid="save-adjustment">
+      @if (submitting()) {
+        <mat-spinner diameter="18" />
+      } @else {
+        Save
+      }
+    </button>
+  </mat-dialog-actions>
+</form>

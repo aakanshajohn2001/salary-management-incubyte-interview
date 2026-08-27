@@ -1,0 +1,27 @@
+.profile-card {
+  margin: 16px 0 24px;
+}
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(160px, 1fr));
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.label {
+  display: block;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.hint {
+  margin-left: 12px;
+  font-size: 0.8rem;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.history-table {
+  width: 100%;
+}
