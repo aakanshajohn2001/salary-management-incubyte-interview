@@ -4,24 +4,96 @@
 
 | Layer      | Choice                                             | Why |
 |------------|-----------------------------------------------------|-----|
-| Backend    | Java 17, Spring Boot 3, Maven                       | Matches the target JD (Java/Spring craftsperson role) |
-| DB         | PostgreSQL (prod/dev), H2 in-memory (tests)          | Relational, handles 10k-row aggregation well; H2 keeps tests fast/hermetic |
+| Backend    | Java 17, Spring Boot 4, Maven                        | Matches the target JD (Java/Spring craftsperson role); Spring Boot 4 was current stable at build time |
+| DB         | PostgreSQL (prod), H2 in file/PostgreSQL-mode (dev), H2 in-memory (tests) | Relational, handles 10k-row aggregation well; H2 keeps local dev and tests fast/hermetic without requiring a local Postgres install |
 | Migrations | Flyway                                              | Versioned schema = readable history of data-model evolution |
 | Auth       | Spring Security + JWT (jjwt)                        | Single-role login, stateless, no session store needed |
-| Frontend   | Angular 17 (standalone components) + Angular Material | Matches JD; Material gives production-grade table/form/dialog components out of the box |
+| Frontend   | Angular 22 (standalone components, esbuild builder) + Angular Material | Matches JD; Material gives production-grade table/form/dialog components out of the box |
 | Charts     | ngx-charts                                          | Lightweight, no heavy dependency for a handful of dashboard charts |
 | Deploy     | Render (backend + Postgres), Vercel (Angular static build) | Both have workable free tiers for a demo deployment |
 
+## System architecture
+
+```mermaid
+flowchart LR
+    subgraph Browser
+        UI["Angular SPA<br/>(Material UI, Vercel-hosted)"]
+    end
+
+    subgraph Render["Render (Docker)"]
+        API["Spring Boot REST API<br/>(stateless, JWT-secured)"]
+        DB[("PostgreSQL")]
+        API -- "JDBC" --> DB
+    end
+
+    UI -- "HTTPS + JSON<br/>Authorization: Bearer &lt;JWT&gt;" --> API
+
+    subgraph Auth["Auth flow"]
+        direction TB
+        L1["POST /api/auth/login<br/>{username, password}"] --> L2["BCrypt verify vs app_user"]
+        L2 --> L3["Issue signed JWT<br/>(subject=username, claim=role)"]
+    end
+
+    UI -. "1. login" .-> L1
+    L3 -. "2. token stored client-side,<br/>attached to every later request" .-> UI
+```
+
+The frontend never talks to the database directly and holds no
+long-lived server session — every request after login carries the JWT,
+verified statelessly on each call. This is what makes the backend safe to
+scale/restart without a shared session store, and is why there's no
+server-side "logout" endpoint: logging out is just the client discarding
+its token.
+
 ## Domain model
 
-```
-Country(code PK, name, currency_code, fx_to_usd)
-Department(id PK, name)
-Employee(id PK, first_name, last_name, email, department_id FK,
-         country_code FK, job_band, hire_date, status)
-SalaryRecord(id PK, employee_id FK, amount, currency_code,
-             effective_date, reason, created_at)
-AppUser(id PK, username, password_hash, role)
+```mermaid
+erDiagram
+    CURRENCY ||--o{ COUNTRY : "priced in"
+    CURRENCY ||--o{ SALARY_RECORD : "denominates"
+    COUNTRY ||--o{ EMPLOYEE : "based in"
+    DEPARTMENT ||--o{ EMPLOYEE : "belongs to"
+    EMPLOYEE ||--o{ SALARY_RECORD : "has history of"
+
+    CURRENCY {
+        varchar code PK
+        numeric fx_to_usd
+    }
+    COUNTRY {
+        varchar code PK
+        varchar name
+        varchar currency_code FK
+    }
+    DEPARTMENT {
+        bigint id PK
+        varchar name
+    }
+    EMPLOYEE {
+        bigint id PK
+        varchar first_name
+        varchar last_name
+        varchar email
+        bigint department_id FK
+        varchar country_code FK
+        varchar job_band
+        date hire_date
+        varchar status
+    }
+    SALARY_RECORD {
+        bigint id PK
+        bigint employee_id FK
+        numeric amount
+        varchar currency_code FK
+        date effective_date
+        varchar reason
+        timestamp created_at
+    }
+    APP_USER {
+        bigint id PK
+        varchar username
+        varchar password_hash
+        varchar role
+    }
 ```
 
 `SalaryRecord` is **append-only**: giving a raise inserts a new row with a
@@ -32,7 +104,9 @@ and lets analytics simply be "aggregate the current record per employee."
 
 `job_band` is a simple enum-like string (e.g. `L1`..`L6`) rather than a
 separate table — it doesn't need its own attributes beyond a label, so a
-join table would be premature.
+join table would be premature. `AppUser` has no foreign keys to the rest
+of the schema on purpose: it's an operator account for the tool, not part
+of the org data being managed.
 
 ## API shape (indicative)
 
@@ -43,34 +117,39 @@ join table would be premature.
 - `POST /api/employees/{id}/salary-adjustments` → append a SalaryRecord
 - `GET /api/analytics/summary` → headcount/payroll by dept & country, band pay ranges, currency-normalized totals
 - `GET /api/employees/export` → CSV of current filtered view
+- `GET /api/reference/departments`, `GET /api/reference/countries` → lookups for the UI's filter dropdowns
 
 All endpoints except `/api/auth/login` require a valid JWT.
 
 ## Performance approach at 10k employees
 
-- Directory listing and analytics are computed with SQL
-  aggregation/pagination (`LIMIT`/`OFFSET` + indexed columns, `GROUP BY`
-  queries), not by loading all rows into the JVM and filtering in Java.
-- Indexes on `employee.department_id`, `employee.country_code`,
-  `employee.job_band`, and `salary_record.employee_id` support the
-  directory filters and the "latest salary per employee" lookup.
-- The 10k-row seed uses batched JDBC inserts (not one `save()` call per
-  row) so seeding stays fast and repeatable.
+Short version: nothing pulls all 10k rows into application memory to
+filter/aggregate them in Java — SQL does that work. See
+`docs/performance.md` for the specific query patterns and measured
+numbers (seed time, analytics latency, export latency).
 
 ## Testing strategy
 
-- **Backend unit tests** (JUnit5 + Mockito): service-layer logic —
-  salary-adjustment validation (no backdating before the last record,
-  positive amounts), analytics aggregation math, DTO mapping. No DB, no
-  Spring context — fast and deterministic.
-- **Backend integration tests** (`@SpringBootTest` + H2): auth flow,
-  directory pagination/filtering against real repository queries, salary
-  adjustment persisting correctly and appearing in history. H2 in place
-  of Postgres keeps these hermetic and fast while still exercising real
-  SQL.
-- **Frontend unit tests** (Jasmine/Karma): directory filter/search logic,
-  salary-adjustment form validation, auth interceptor/guard behavior —
-  each isolated from network calls via mocked services.
+- **Pure unit tests** (JUnit 5, no Spring context): `JwtServiceTest`
+  covers token issue/parse/expiry/tamper-rejection in isolation — fast,
+  no DB, no HTTP.
+- **Backend integration tests** (`@SpringBootTest` + MockMvc + H2, one
+  suite per feature): auth flow, directory search/filter/pagination,
+  salary-adjustment business rules (backdating, pre-hire dates,
+  terminated employees), analytics aggregation math against a known
+  fixture, CSV export, reference-data lookups. These exercise the real
+  Spring wiring and real SQL (H2 in PostgreSQL-compatibility mode)
+  end-to-end through the actual HTTP layer, which is where most of the
+  business rules in this app actually live.
+- **Repository-level test** (`@DataJpaTest`): `EmployeeRepositoryTest`
+  verifies the `Specification` filter and the eager-fetch detail query
+  directly against the Flyway-migrated schema.
+- **Frontend unit tests** (Angular's default Vitest runner +
+  `HttpClientTestingModule`): auth session persistence, the HTTP
+  interceptor's token-attach/401-redirect behavior, the route guard,
+  directory filter → query-param mapping, the salary-adjustment dialog's
+  validation/success/error paths, and the login flow — each isolated
+  from a real backend via mocked HTTP.
 
 ## What was deliberately kept simple
 
