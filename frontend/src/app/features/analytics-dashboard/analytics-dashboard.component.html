@@ -83,4 +83,45 @@
       </table>
     </mat-card>
   </div>
+
+  <mat-card class="chart-card recent-changes-card">
+    <h2>Recent salary changes</h2>
+    <p class="chart-hint">The last {{ recentChanges().length }} adjustments recorded org-wide, newest first.</p>
+
+    @if (recentChanges().length === 0) {
+      <p class="empty-state">No salary adjustments have been recorded yet.</p>
+    } @else {
+      <table mat-table [dataSource]="recentChanges()" class="recent-changes-table">
+        <ng-container matColumnDef="employeeName">
+          <th mat-header-cell *matHeaderCellDef>Employee</th>
+          <td mat-cell *matCellDef="let change">{{ change.employeeName }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="department">
+          <th mat-header-cell *matHeaderCellDef>Department</th>
+          <td mat-cell *matCellDef="let change">{{ change.department }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="amount">
+          <th mat-header-cell *matHeaderCellDef>New amount</th>
+          <td mat-cell *matCellDef="let change">
+            {{ change.amount | number: '1.2-2' }} {{ change.currencyCode }}
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="effectiveDate">
+          <th mat-header-cell *matHeaderCellDef>Effective date</th>
+          <td mat-cell *matCellDef="let change">{{ change.effectiveDate }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="reason">
+          <th mat-header-cell *matHeaderCellDef>Reason</th>
+          <td mat-cell *matCellDef="let change">{{ change.reason }}</td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedRecentChangeColumns"></tr>
+        <tr mat-row *matRowDef="let change; columns: displayedRecentChangeColumns"></tr>
+      </table>
+    }
+  </mat-card>
 }

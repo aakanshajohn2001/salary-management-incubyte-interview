@@ -4,7 +4,8 @@ import { MatCardModule } from '@angular/material/card';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTableModule } from '@angular/material/table';
 import { NgxChartsModule } from '@swimlane/ngx-charts';
-import { AnalyticsSummary } from '../../core/models/analytics.model';
+import { forkJoin } from 'rxjs';
+import { AnalyticsSummary, RecentSalaryChange } from '../../core/models/analytics.model';
 import { AnalyticsService } from '../../core/services/analytics.service';
 
 @Component({
@@ -18,8 +19,10 @@ export class AnalyticsDashboardComponent implements OnInit {
   private readonly analyticsService = inject(AnalyticsService);
 
   readonly displayedBandColumns = ['jobBand', 'headcount', 'min', 'average', 'max'];
+  readonly displayedRecentChangeColumns = ['employeeName', 'department', 'amount', 'effectiveDate', 'reason'];
   readonly loading = signal(false);
   readonly summary = signal<AnalyticsSummary | null>(null);
+  readonly recentChanges = signal<RecentSalaryChange[]>([]);
 
   readonly headcountByDepartment = computed(() =>
     (this.summary()?.byDepartment ?? []).map((d) => ({ name: d.department, value: d.headcount })),
@@ -38,9 +41,10 @@ export class AnalyticsDashboardComponent implements OnInit {
 
   ngOnInit(): void {
     this.loading.set(true);
-    this.analyticsService.getSummary().subscribe({
-      next: (summary) => {
+    forkJoin([this.analyticsService.getSummary(), this.analyticsService.getRecentChanges(10)]).subscribe({
+      next: ([summary, recentChanges]) => {
         this.summary.set(summary);
+        this.recentChanges.set(recentChanges);
         this.loading.set(false);
       },
       error: () => this.loading.set(false),

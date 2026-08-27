@@ -143,4 +143,46 @@ class AnalyticsControllerTest {
         mockMvc.perform(get("/api/analytics/summary"))
                 .andExpect(status().isUnauthorized());
     }
+
+    @Test
+    void recentChanges_returnsNewestFirstAcrossAllEmployees() throws Exception {
+        // setUp's three initial-hire records were all created "now", in
+        // insertion order; add one more so there's an unambiguous newest.
+        Employee usEmployee = employeeRepository.findAll().stream()
+                .filter(e -> e.getEmail().equals("ada@acme-corp.example"))
+                .findFirst().orElseThrow();
+        Currency usd = currencyRepository.findById("USD").orElseThrow();
+        salaryRecordRepository.save(new SalaryRecord(usEmployee, new BigDecimal("110000.00"), usd,
+                LocalDate.of(2021, 1, 1), "Annual raise"));
+
+        mockMvc.perform(get("/api/analytics/recent-changes").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(4))
+                .andExpect(jsonPath("$[0].employeeName").value("Ada Lovelace"))
+                .andExpect(jsonPath("$[0].amount").value(110000.00))
+                .andExpect(jsonPath("$[0].reason").value("Annual raise"))
+                .andExpect(jsonPath("$[0].department").value("Engineering"));
+    }
+
+    @Test
+    void recentChanges_respectsLimitParameter() throws Exception {
+        mockMvc.perform(get("/api/analytics/recent-changes").param("limit", "2")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2));
+    }
+
+    @Test
+    void recentChanges_clampsAnOversizedLimit() throws Exception {
+        mockMvc.perform(get("/api/analytics/recent-changes").param("limit", "10000")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(3));
+    }
+
+    @Test
+    void recentChanges_withoutToken_returns401() throws Exception {
+        mockMvc.perform(get("/api/analytics/recent-changes"))
+                .andExpect(status().isUnauthorized());
+    }
 }

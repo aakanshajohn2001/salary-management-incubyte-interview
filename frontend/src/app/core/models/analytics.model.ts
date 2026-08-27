@@ -29,3 +29,14 @@ export interface AnalyticsSummary {
   byCountry: CountryBreakdown[];
   byJobBand: BandBreakdown[];
 }
+
+export interface RecentSalaryChange {
+  employeeId: number;
+  employeeName: string;
+  department: string;
+  amount: number;
+  currencyCode: string;
+  effectiveDate: string;
+  reason: string;
+  createdAt: string;
+}

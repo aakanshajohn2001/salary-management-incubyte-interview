@@ -1,6 +1,7 @@
 package com.acme.salary.compensation;
 
 import com.acme.salary.employee.JobBand;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -51,6 +52,19 @@ public interface SalaryRecordRepository extends JpaRepository<SalaryRecord, Long
             group by e.jobBand
             """)
     List<JobBandAverage> averageCurrentSalaryUsdByJobBand();
+
+    /**
+     * Most recent salary adjustments org-wide, newest first -- backs the
+     * analytics dashboard's "recent changes" feed (who got what, when, and
+     * why), a different angle on the same data than the aggregate charts.
+     */
+    @Query("""
+            select sr from SalaryRecord sr
+            join fetch sr.employee e
+            join fetch e.department
+            order by sr.createdAt desc, sr.id desc
+            """)
+    List<SalaryRecord> findRecentAcrossOrg(Pageable pageable);
 
     interface JobBandAverage {
         JobBand getJobBand();
