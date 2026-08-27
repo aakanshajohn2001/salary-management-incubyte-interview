@@ -1,4 +1,13 @@
-<h1>Analytics</h1>
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Compensation overview</h1>
+    @if (summary(); as headerSummary) {
+      <p class="page-subtitle">
+        {{ headerSummary.totalHeadcount | number }} employees &middot; {{ headerSummary.byCountry.length }} countries
+      </p>
+    }
+  </div>
+</div>
 
 @if (loading()) {
   <mat-progress-bar mode="indeterminate" />
@@ -7,55 +16,84 @@
 @if (summary(); as summary) {
   <div class="stat-tiles">
     <mat-card class="stat-tile">
-      <span class="stat-label">Active headcount</span>
-      <span class="stat-value">{{ summary.totalHeadcount | number }}</span>
-    </mat-card>
-    <mat-card class="stat-tile">
-      <span class="stat-label">Total payroll (USD)</span>
+      <span class="stat-label">Annual payroll spend</span>
       <span class="stat-value">{{ summary.totalPayrollUsd | number: '1.0-0' }}</span>
+      <span class="stat-hint">USD, FX-normalised</span>
     </mat-card>
     <mat-card class="stat-tile">
-      <span class="stat-label">Average salary (USD)</span>
+      <span class="stat-label">Employees</span>
+      <span class="stat-value">{{ summary.totalHeadcount | number }}</span>
+      <span class="stat-hint">Active headcount</span>
+    </mat-card>
+    <mat-card class="stat-tile">
+      <span class="stat-label">Average base salary</span>
       <span class="stat-value">{{ summary.averageSalaryUsd | number: '1.0-0' }}</span>
+      <span class="stat-hint">USD, FX-normalised</span>
     </mat-card>
   </div>
 
   <div class="charts-grid">
     <mat-card class="chart-card">
       <h2>Headcount by department</h2>
-      <ngx-charts-bar-vertical
-        [results]="headcountByDepartment()"
-        [xAxis]="true"
-        [yAxis]="true"
-        [showXAxisLabel]="false"
-        [showYAxisLabel]="false"
-        [view]="[600, 320]"
-      />
+      <div class="chart-container">
+        <ngx-charts-bar-vertical
+          [results]="headcountByDepartment()"
+          [scheme]="colorScheme"
+          [xAxis]="true"
+          [yAxis]="true"
+          [showXAxisLabel]="false"
+          [showYAxisLabel]="false"
+        />
+      </div>
     </mat-card>
 
     <mat-card class="chart-card">
-      <h2>Total payroll (USD) by country</h2>
-      <ngx-charts-bar-horizontal
-        [results]="payrollByCountry()"
-        [xAxis]="true"
-        [yAxis]="true"
-        [showXAxisLabel]="false"
-        [showYAxisLabel]="false"
-        [view]="[600, 320]"
-      />
+      <h2>Spend by country</h2>
+      <div class="table-scroll country-scroll">
+      <table mat-table [dataSource]="countrySpendRows()" class="country-table">
+        <ng-container matColumnDef="countryName">
+          <th mat-header-cell *matHeaderCellDef>Country</th>
+          <td mat-cell *matCellDef="let country">{{ country.countryName }}</td>
+        </ng-container>
+        <ng-container matColumnDef="headcount">
+          <th mat-header-cell *matHeaderCellDef>Headcount</th>
+          <td mat-cell *matCellDef="let country">{{ country.headcount | number }}</td>
+        </ng-container>
+        <ng-container matColumnDef="totalPayrollUsd">
+          <th mat-header-cell *matHeaderCellDef>Annual spend</th>
+          <td mat-cell *matCellDef="let country">{{ country.totalPayrollUsd | number: '1.0-0' }}</td>
+        </ng-container>
+        <ng-container matColumnDef="averageSalaryUsd">
+          <th mat-header-cell *matHeaderCellDef>Avg. base</th>
+          <td mat-cell *matCellDef="let country">{{ country.averageSalaryUsd | number: '1.0-0' }}</td>
+        </ng-container>
+        <ng-container matColumnDef="share">
+          <th mat-header-cell *matHeaderCellDef>Share</th>
+          <td mat-cell *matCellDef="let country">
+            <span class="share-bar">
+              <span class="share-bar-fill" [style.width.%]="country.sharePercent"></span>
+            </span>
+          </td>
+        </ng-container>
+        <tr mat-header-row *matHeaderRowDef="displayedCountryColumns"></tr>
+        <tr mat-row *matRowDef="let country; columns: displayedCountryColumns"></tr>
+      </table>
+      </div>
     </mat-card>
 
     <mat-card class="chart-card wide">
       <h2>Pay by job band (USD)</h2>
       <p class="chart-hint">A basic pay-equity view: average salary per band, with the full min&ndash;max range below.</p>
-      <ngx-charts-bar-vertical
-        [results]="averageSalaryByBand()"
-        [xAxis]="true"
-        [yAxis]="true"
-        [showXAxisLabel]="false"
-        [showYAxisLabel]="false"
-        [view]="[900, 300]"
-      />
+      <div class="chart-container wide">
+        <ngx-charts-bar-vertical
+          [results]="averageSalaryByBand()"
+          [scheme]="colorScheme"
+          [xAxis]="true"
+          [yAxis]="true"
+          [showXAxisLabel]="false"
+          [showYAxisLabel]="false"
+        />
+      </div>
 
       <table mat-table [dataSource]="summary.byJobBand" class="band-table">
         <ng-container matColumnDef="jobBand">
@@ -91,6 +129,7 @@
     @if (recentChanges().length === 0) {
       <p class="empty-state">No salary adjustments have been recorded yet.</p>
     } @else {
+      <div class="table-scroll recent-changes-scroll">
       <table mat-table [dataSource]="recentChanges()" class="recent-changes-table">
         <ng-container matColumnDef="employeeName">
           <th mat-header-cell *matHeaderCellDef>Employee</th>
@@ -122,6 +161,7 @@
         <tr mat-header-row *matHeaderRowDef="displayedRecentChangeColumns"></tr>
         <tr mat-row *matRowDef="let change; columns: displayedRecentChangeColumns"></tr>
       </table>
+      </div>
     }
   </mat-card>
 }

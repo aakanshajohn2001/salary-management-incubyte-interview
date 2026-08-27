@@ -2,9 +2,28 @@
   margin: 16px 0 24px;
 }
 
+.profile-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--mat-sys-primary, #2e7d32);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 0.02em;
+}
+
+.section-heading {
+  font-weight: 700;
+}
+
+.history-scroll {
+  max-height: 400px;
+}
+
 .profile-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 16px;
   margin-top: 8px;
 }
@@ -26,11 +45,29 @@
   width: 100%;
 }
 
-.equity-flag {
+.equity-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 6px;
+  padding: 1px 8px 1px 4px;
+  border-radius: 999px;
+  background: #fff3e0;
   color: #b26a00;
-  font-size: 18px;
-  height: 18px;
-  width: 18px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1.6;
+  white-space: nowrap;
   vertical-align: middle;
-  margin-left: 4px;
+
+  mat-icon {
+    font-size: 14px;
+    height: 14px;
+    width: 14px;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #b26a00;
+    outline-offset: 1px;
+  }
 }

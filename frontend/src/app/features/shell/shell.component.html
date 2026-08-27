@@ -1,24 +1,49 @@
-<mat-toolbar color="primary" class="toolbar">
-  <span class="brand">
-    <span class="brand-mark">A</span>
-    <span class="brand-text">ACME<span class="brand-sub">Salary Management</span></span>
-  </span>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="brand-mark">A</span>
+      <span class="brand-text">
+        ACME
+        <span class="brand-sub">Salary Management</span>
+      </span>
+    </div>
 
-  <nav class="nav-links">
-    <a mat-button routerLink="/employees" routerLinkActive="active">Employees</a>
-    <a mat-button routerLink="/analytics" routerLinkActive="active">Analytics</a>
-  </nav>
+    <nav class="nav-links">
+      <a
+        routerLink="/analytics"
+        routerLinkActive="active"
+        #analyticsLink="routerLinkActive"
+        [attr.aria-current]="analyticsLink.isActive ? 'page' : null"
+      >
+        <mat-icon aria-hidden="true">insights</mat-icon>
+        Compensation
+      </a>
+      <a
+        routerLink="/employees"
+        routerLinkActive="active"
+        #employeesLink="routerLinkActive"
+        [attr.aria-current]="employeesLink.isActive ? 'page' : null"
+      >
+        <mat-icon aria-hidden="true">groups</mat-icon>
+        Employees
+      </a>
+    </nav>
 
-  <span class="spacer"></span>
+    <div class="sidebar-footer">
+      @if (authService.username(); as username) {
+        <span class="user-avatar" aria-hidden="true">{{ username[0] }}</span>
+        <span class="user-info">
+          <span class="user-name">{{ username }}</span>
+          <span class="user-role">HR Manager</span>
+        </span>
+      }
+      <button mat-icon-button (click)="logout()" aria-label="Log out" title="Log out">
+        <mat-icon>logout</mat-icon>
+      </button>
+    </div>
+  </aside>
 
-  @if (authService.username(); as username) {
-    <span class="username">{{ username }}</span>
-  }
-  <button mat-icon-button (click)="logout()" aria-label="Log out" title="Log out">
-    <mat-icon>logout</mat-icon>
-  </button>
-</mat-toolbar>
-
-<main class="content">
-  <router-outlet />
-</main>
+  <main class="content">
+    <router-outlet />
+  </main>
+</div>

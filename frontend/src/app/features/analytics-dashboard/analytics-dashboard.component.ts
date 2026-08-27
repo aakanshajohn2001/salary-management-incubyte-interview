@@ -3,7 +3,7 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTableModule } from '@angular/material/table';
-import { NgxChartsModule } from '@swimlane/ngx-charts';
+import { Color, NgxChartsModule, ScaleType } from '@swimlane/ngx-charts';
 import { forkJoin } from 'rxjs';
 import { AnalyticsSummary, RecentSalaryChange } from '../../core/models/analytics.model';
 import { AnalyticsService } from '../../core/services/analytics.service';
@@ -18,8 +18,16 @@ import { AnalyticsService } from '../../core/services/analytics.service';
 export class AnalyticsDashboardComponent implements OnInit {
   private readonly analyticsService = inject(AnalyticsService);
 
+  readonly colorScheme: Color = {
+    name: 'acme',
+    selectable: true,
+    group: ScaleType.Ordinal,
+    domain: ['#2e7d32', '#ef6c00', '#66bb6a', '#fb8c00', '#1b5e20', '#a5d6a7', '#e65100'],
+  };
+
   readonly displayedBandColumns = ['jobBand', 'headcount', 'min', 'average', 'max'];
   readonly displayedRecentChangeColumns = ['employeeName', 'department', 'amount', 'effectiveDate', 'reason'];
+  readonly displayedCountryColumns = ['countryName', 'headcount', 'totalPayrollUsd', 'averageSalaryUsd', 'share'];
   readonly loading = signal(false);
   readonly summary = signal<AnalyticsSummary | null>(null);
   readonly recentChanges = signal<RecentSalaryChange[]>([]);
@@ -38,6 +46,18 @@ export class AnalyticsDashboardComponent implements OnInit {
   readonly averageSalaryByBand = computed(() =>
     (this.summary()?.byJobBand ?? []).map((b) => ({ name: b.jobBand, value: Math.round(b.averageSalaryUsd) })),
   );
+
+  readonly countrySpendRows = computed(() => {
+    const summary = this.summary();
+    if (!summary) {
+      return [];
+    }
+    const total = summary.totalPayrollUsd || 1;
+    return summary.byCountry.map((country) => ({
+      ...country,
+      sharePercent: (country.totalPayrollUsd / total) * 100,
+    }));
+  });
 
   ngOnInit(): void {
     this.loading.set(true);

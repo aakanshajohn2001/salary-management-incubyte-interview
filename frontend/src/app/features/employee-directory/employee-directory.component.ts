@@ -11,6 +11,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatTableModule } from '@angular/material/table';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSortModule, Sort } from '@angular/material/sort';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Employee, EmployeeFilter, EmployeeSort } from '../../core/models/employee.model';
@@ -33,6 +34,7 @@ import { ReferenceDataService } from '../../core/services/reference-data.service
     MatTableModule,
     MatPaginatorModule,
     MatProgressBarModule,
+    MatProgressSpinnerModule,
     MatSortModule,
     MatTooltipModule,
   ],
@@ -121,6 +123,10 @@ export class EmployeeDirectoryComponent implements OnInit {
 
   openEmployee(id: number): void {
     this.router.navigate(['/employees', id]);
+  }
+
+  clearFilters(): void {
+    this.filterForm.reset({ search: '', departmentId: null, countryCode: '', jobBand: '' });
   }
 
   exportCsv(): void {

@@ -1,117 +1,165 @@
 <div class="page-header">
-  <h1>Employees</h1>
-  <button mat-stroked-button (click)="exportCsv()" [disabled]="exporting()" data-testid="export-csv">
-    {{ exporting() ? 'Exporting…' : 'Export CSV' }}
-  </button>
+  <div>
+    <h1 class="page-title">Employee directory</h1>
+    @if (pageData(); as headerData) {
+      <p class="page-subtitle">{{ headerData.totalElements | number }} employees</p>
+    }
+  </div>
+
+  <div class="header-actions">
+    <div class="search-box">
+      <mat-icon aria-hidden="true">search</mat-icon>
+      <input
+        [formControl]="filterForm.controls.search"
+        placeholder="Search employees"
+        aria-label="Search employees by name or email"
+        data-testid="search-input"
+      />
+    </div>
+
+    <button mat-stroked-button (click)="exportCsv()" [disabled]="exporting()" data-testid="export-csv" class="export-button">
+      @if (exporting()) {
+        <mat-spinner diameter="16" class="button-spinner" />
+        Exporting…
+      } @else {
+        <span class="button-content"><mat-icon aria-hidden="true">download</mat-icon>Export</span>
+      }
+    </button>
+  </div>
 </div>
 
-<form [formGroup]="filterForm" class="filters">
-  <mat-form-field appearance="outline">
-    <mat-label>Search name or email</mat-label>
-    <input matInput formControlName="search" data-testid="search-input" />
-  </mat-form-field>
-
-  <mat-form-field appearance="outline">
-    <mat-label>Department</mat-label>
-    <mat-select formControlName="departmentId" data-testid="department-select">
-      <mat-option [value]="null">All departments</mat-option>
-      @for (department of departments(); track department.id) {
-        <mat-option [value]="department.id">{{ department.name }}</mat-option>
-      }
-    </mat-select>
-  </mat-form-field>
-
-  <mat-form-field appearance="outline">
-    <mat-label>Country</mat-label>
-    <mat-select formControlName="countryCode" data-testid="country-select">
-      <mat-option [value]="''">All countries</mat-option>
-      @for (country of countries(); track country.code) {
-        <mat-option [value]="country.code">{{ country.name }}</mat-option>
-      }
-    </mat-select>
-  </mat-form-field>
-
-  <mat-form-field appearance="outline">
-    <mat-label>Job band</mat-label>
-    <mat-select formControlName="jobBand" data-testid="band-select">
-      <mat-option [value]="''">All bands</mat-option>
-      @for (band of jobBands; track band) {
-        <mat-option [value]="band">{{ band }}</mat-option>
-      }
-    </mat-select>
-  </mat-form-field>
-</form>
-
-@if (loading()) {
-  <mat-progress-bar mode="indeterminate" />
-}
-
-@if (pageData(); as data) {
-  <table mat-table [dataSource]="data.content" matSort (matSortChange)="onSortChange($event)" class="directory-table">
-    <ng-container matColumnDef="name">
-      <th mat-header-cell *matHeaderCellDef mat-sort-header>Name</th>
-      <td mat-cell *matCellDef="let employee">{{ employee.firstName }} {{ employee.lastName }}</td>
-    </ng-container>
-
-    <ng-container matColumnDef="department">
-      <th mat-header-cell *matHeaderCellDef mat-sort-header>Department</th>
-      <td mat-cell *matCellDef="let employee">{{ employee.department }}</td>
-    </ng-container>
-
-    <ng-container matColumnDef="country">
-      <th mat-header-cell *matHeaderCellDef mat-sort-header>Country</th>
-      <td mat-cell *matCellDef="let employee">{{ employee.countryName }}</td>
-    </ng-container>
-
-    <ng-container matColumnDef="jobBand">
-      <th mat-header-cell *matHeaderCellDef mat-sort-header>Band</th>
-      <td mat-cell *matCellDef="let employee">{{ employee.jobBand }}</td>
-    </ng-container>
-
-    <ng-container matColumnDef="salary">
-      <th mat-header-cell *matHeaderCellDef mat-sort-header>Current salary</th>
-      <td mat-cell *matCellDef="let employee">
-        @if (employee.currentSalaryAmount != null) {
-          {{ employee.currentSalaryAmount | number: '1.2-2' }} {{ employee.currentSalaryCurrency }}
-          @if (employee.belowBandAverage) {
-            <mat-icon
-              class="equity-flag"
-              matTooltip="Paid notably below this job band's org-wide average -- possible pay-equity outlier"
-              aria-label="Below band average"
-              data-testid="below-band-average-flag"
-            >
-              flag
-            </mat-icon>
-          }
-        } @else {
-          &mdash;
+<div class="filters-card">
+  <form [formGroup]="filterForm" class="filters">
+    <mat-form-field appearance="outline" class="filter-field">
+      <mat-label>Department</mat-label>
+      <mat-select formControlName="departmentId" data-testid="department-select">
+        <mat-option [value]="null">All departments</mat-option>
+        @for (department of departments(); track department.id) {
+          <mat-option [value]="department.id">{{ department.name }}</mat-option>
         }
-      </td>
-    </ng-container>
+      </mat-select>
+    </mat-form-field>
 
-    <ng-container matColumnDef="status">
-      <th mat-header-cell *matHeaderCellDef mat-sort-header>Status</th>
-      <td mat-cell *matCellDef="let employee">{{ employee.status }}</td>
-    </ng-container>
+    <mat-form-field appearance="outline" class="filter-field">
+      <mat-label>Country</mat-label>
+      <mat-select formControlName="countryCode" data-testid="country-select">
+        <mat-option [value]="''">All countries</mat-option>
+        @for (country of countries(); track country.code) {
+          <mat-option [value]="country.code">{{ country.name }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
 
-    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-    <tr
-      mat-row
-      *matRowDef="let employee; columns: displayedColumns"
-      (click)="openEmployee(employee.id)"
-      class="employee-row"
-    ></tr>
-  </table>
+    <mat-form-field appearance="outline" class="filter-field">
+      <mat-label>Job band</mat-label>
+      <mat-select formControlName="jobBand" data-testid="band-select">
+        <mat-option [value]="''">All bands</mat-option>
+        @for (band of jobBands; track band) {
+          <mat-option [value]="band">{{ band }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
 
-  @if (data.totalElements === 0) {
-    <p class="empty-state">No employees match these filters.</p>
+    <span class="filters-spacer"></span>
+
+    @if (pageData(); as filterData) {
+      <span class="filter-count">{{ filterData.content.length }} of {{ filterData.totalElements | number }}</span>
+    }
+  </form>
+
+  @if (loading()) {
+    <mat-progress-bar mode="indeterminate" />
   }
 
-  <mat-paginator
-    [length]="data.totalElements"
-    [pageSize]="data.size"
-    [pageIndex]="data.page"
-    [pageSizeOptions]="[10, 25, 50, 100]"
-    (page)="onPageChange($event)"
-  />
-}
+  @if (pageData(); as data) {
+    <div class="table-scroll directory-scroll">
+    <table mat-table [dataSource]="data.content" matSort (matSortChange)="onSortChange($event)" class="directory-table">
+      <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Employee</th>
+        <td mat-cell *matCellDef="let employee">
+          <div class="employee-cell">
+            <span class="row-avatar" aria-hidden="true">{{ employee.firstName[0] }}{{ employee.lastName[0] }}</span>
+            <span class="employee-name">{{ employee.firstName }} {{ employee.lastName }}</span>
+          </div>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="department">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Department</th>
+        <td mat-cell *matCellDef="let employee">{{ employee.department }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="country">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Location</th>
+        <td mat-cell *matCellDef="let employee">{{ employee.countryName }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="jobBand">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Level</th>
+        <td mat-cell *matCellDef="let employee">
+          <span class="level-pill">{{ employee.jobBand }}</span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="salary">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Base salary</th>
+        <td mat-cell *matCellDef="let employee">
+          @if (employee.currentSalaryAmount != null) {
+            <span class="salary-amount">{{ employee.currentSalaryAmount | number: '1.2-2' }} {{ employee.currentSalaryCurrency }}</span>
+            @if (employee.belowBandAverage) {
+              <span
+                class="equity-badge"
+                tabindex="0"
+                matTooltip="Paid notably below this job band's org-wide average -- possible pay-equity outlier"
+                data-testid="below-band-average-flag"
+              >
+                <mat-icon aria-hidden="true">flag</mat-icon>
+                Below avg
+              </span>
+            }
+          } @else {
+            &mdash;
+          }
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Status</th>
+        <td mat-cell *matCellDef="let employee">
+          <span class="status-pill" [class.status-terminated]="employee.status !== 'ACTIVE'">
+            {{ employee.status === 'ACTIVE' ? 'Active' : 'Terminated' }}
+          </span>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr
+        mat-row
+        *matRowDef="let employee; columns: displayedColumns"
+        (click)="openEmployee(employee.id)"
+        (keydown.enter)="openEmployee(employee.id)"
+        (keydown.space)="openEmployee(employee.id); $event.preventDefault()"
+        tabindex="0"
+        role="button"
+        [attr.aria-label]="'Open ' + employee.firstName + ' ' + employee.lastName"
+        class="employee-row"
+      ></tr>
+    </table>
+    </div>
+
+    @if (data.totalElements === 0) {
+      <div class="empty-state">
+        <p>No employees match these filters.</p>
+        <button mat-button (click)="clearFilters()">Clear filters</button>
+      </div>
+    }
+
+    <mat-paginator
+      [length]="data.totalElements"
+      [pageSize]="data.size"
+      [pageIndex]="data.page"
+      [pageSizeOptions]="[10, 25, 50, 100]"
+      (page)="onPageChange($event)"
+    />
+  }
+</div>

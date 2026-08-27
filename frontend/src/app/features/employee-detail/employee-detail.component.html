@@ -10,6 +10,7 @@
 @if (employee(); as employee) {
   <mat-card class="profile-card">
     <mat-card-header>
+      <div class="profile-avatar" mat-card-avatar aria-hidden="true">{{ employee.firstName[0] }}{{ employee.lastName[0] }}</div>
       <mat-card-title>{{ employee.firstName }} {{ employee.lastName }}</mat-card-title>
       <mat-card-subtitle>{{ employee.email }}</mat-card-subtitle>
     </mat-card-header>
@@ -25,14 +26,15 @@
           @if (employee.currentSalaryAmount != null) {
             {{ employee.currentSalaryAmount | number: '1.2-2' }} {{ employee.currentSalaryCurrency }}
             @if (employee.belowBandAverage) {
-              <mat-icon
-                class="equity-flag"
+              <span
+                class="equity-badge"
+                tabindex="0"
                 matTooltip="Paid notably below this job band's org-wide average -- possible pay-equity outlier"
-                aria-label="Below band average"
                 data-testid="below-band-average-flag"
               >
-                flag
-              </mat-icon>
+                <mat-icon aria-hidden="true">flag</mat-icon>
+                Below avg
+              </span>
             }
           } @else {
             &mdash;
@@ -56,7 +58,8 @@
     </mat-card-actions>
   </mat-card>
 
-  <h2>Salary history</h2>
+  <h2 class="section-heading">Salary history</h2>
+  <div class="table-scroll history-scroll">
   <table mat-table [dataSource]="history()" class="history-table">
     <ng-container matColumnDef="effectiveDate">
       <th mat-header-cell *matHeaderCellDef>Effective date</th>
@@ -76,4 +79,5 @@
     <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
     <tr mat-row *matRowDef="let entry; columns: displayedColumns"></tr>
   </table>
+  </div>
 }

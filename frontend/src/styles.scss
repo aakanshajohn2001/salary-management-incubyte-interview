@@ -7,13 +7,125 @@ html {
       primary: mat.$green-palette,
       tertiary: mat.$orange-palette,
     ),
-    typography: Roboto,
+    typography: Inter,
     density: 0,
   ));
+}
+
+:root {
+  --app-radius-sm: 8px;
+  --app-radius-md: 12px;
+  --app-radius-lg: 16px;
+  --app-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.06);
+  --app-shadow-md: 0 2px 6px rgba(15, 23, 42, 0.05), 0 8px 24px rgba(15, 23, 42, 0.08);
+  --app-border-color: rgba(15, 23, 42, 0.08);
+  --app-divider-color: rgba(15, 23, 42, 0.06);
+  --app-muted-text: rgba(15, 23, 42, 0.6);
+  --app-header-bg: #fafafa;
 }
 
 html, body {
   height: 100%;
   margin: 0;
-  font-family: Roboto, "Helvetica Neue", sans-serif;
+  font-family: Inter, "Helvetica Neue", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+// ---- Cards: soft elevation instead of Material's default harsh drop shadow ----
+.mat-mdc-card {
+  border-radius: var(--app-radius-md) !important;
+  box-shadow: var(--app-shadow-sm) !important;
+  border: 1px solid var(--app-border-color);
+}
+
+// ---- Tables: muted uppercase headers, zebra rows, lighter dividers ----
+.mat-mdc-table {
+  background: transparent;
+}
+
+.mat-mdc-header-row {
+  background: var(--app-header-bg);
+}
+
+.mat-mdc-header-cell {
+  font-size: 0.72rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--app-muted-text) !important;
+}
+
+.mat-mdc-row {
+  &:nth-child(even) {
+    background: rgba(15, 23, 42, 0.015);
+  }
+}
+
+.mat-mdc-row,
+.mat-mdc-header-row,
+.mat-mdc-footer-row {
+  --mat-table-row-item-outline-color: var(--app-divider-color);
+}
+
+// ---- Status / level pill + row-avatar utilities, shared across pages ----
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+  background: #e6f4ea;
+  color: #1e7e34;
+
+  &.status-terminated {
+    background: rgba(15, 23, 42, 0.08);
+    color: rgba(15, 23, 42, 0.6);
+  }
+}
+
+.level-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--app-border-color);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(15, 23, 42, 0.75);
+  font-variant-numeric: tabular-nums;
+}
+
+.row-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.06);
+  color: rgba(15, 23, 42, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+// Scrollable table wrapper with a sticky header, used on longer tables.
+.table-scroll {
+  overflow: auto;
+  border-radius: var(--app-radius-sm);
+  border: 1px solid var(--app-border-color);
+
+  .mat-mdc-table {
+    background: white;
+  }
+
+  .mat-mdc-header-row {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--app-header-bg);
+    box-shadow: 0 1px 0 var(--app-border-color);
+  }
 }
