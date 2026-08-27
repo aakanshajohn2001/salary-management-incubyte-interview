@@ -1,0 +1,102 @@
+<h1>Employees</h1>
+
+<form [formGroup]="filterForm" class="filters">
+  <mat-form-field appearance="outline">
+    <mat-label>Search name or email</mat-label>
+    <input matInput formControlName="search" data-testid="search-input" />
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Department</mat-label>
+    <mat-select formControlName="departmentId" data-testid="department-select">
+      <mat-option [value]="null">All departments</mat-option>
+      @for (department of departments(); track department.id) {
+        <mat-option [value]="department.id">{{ department.name }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Country</mat-label>
+    <mat-select formControlName="countryCode" data-testid="country-select">
+      <mat-option [value]="''">All countries</mat-option>
+      @for (country of countries(); track country.code) {
+        <mat-option [value]="country.code">{{ country.name }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Job band</mat-label>
+    <mat-select formControlName="jobBand" data-testid="band-select">
+      <mat-option [value]="''">All bands</mat-option>
+      @for (band of jobBands; track band) {
+        <mat-option [value]="band">{{ band }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+</form>
+
+@if (loading()) {
+  <mat-progress-bar mode="indeterminate" />
+}
+
+@if (pageData(); as data) {
+  <table mat-table [dataSource]="data.content" class="directory-table">
+    <ng-container matColumnDef="name">
+      <th mat-header-cell *matHeaderCellDef>Name</th>
+      <td mat-cell *matCellDef="let employee">{{ employee.firstName }} {{ employee.lastName }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="department">
+      <th mat-header-cell *matHeaderCellDef>Department</th>
+      <td mat-cell *matCellDef="let employee">{{ employee.department }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="country">
+      <th mat-header-cell *matHeaderCellDef>Country</th>
+      <td mat-cell *matCellDef="let employee">{{ employee.countryName }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="jobBand">
+      <th mat-header-cell *matHeaderCellDef>Band</th>
+      <td mat-cell *matCellDef="let employee">{{ employee.jobBand }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="salary">
+      <th mat-header-cell *matHeaderCellDef>Current salary</th>
+      <td mat-cell *matCellDef="let employee">
+        @if (employee.currentSalaryAmount != null) {
+          {{ employee.currentSalaryAmount | number: '1.2-2' }} {{ employee.currentSalaryCurrency }}
+        } @else {
+          &mdash;
+        }
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="status">
+      <th mat-header-cell *matHeaderCellDef>Status</th>
+      <td mat-cell *matCellDef="let employee">{{ employee.status }}</td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+    <tr
+      mat-row
+      *matRowDef="let employee; columns: displayedColumns"
+      (click)="openEmployee(employee.id)"
+      class="employee-row"
+    ></tr>
+  </table>
+
+  @if (data.totalElements === 0) {
+    <p class="empty-state">No employees match these filters.</p>
+  }
+
+  <mat-paginator
+    [length]="data.totalElements"
+    [pageSize]="data.size"
+    [pageIndex]="data.page"
+    [pageSizeOptions]="[10, 25, 50, 100]"
+    (page)="onPageChange($event)"
+  />
+}

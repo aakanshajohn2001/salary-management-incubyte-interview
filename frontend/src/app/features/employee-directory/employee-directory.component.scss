@@ -1,0 +1,28 @@
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 8px;
+
+  mat-form-field {
+    min-width: 220px;
+  }
+}
+
+.directory-table {
+  width: 100%;
+}
+
+.employee-row {
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.04);
+  }
+}
+
+.empty-state {
+  padding: 24px 0;
+  text-align: center;
+  color: rgba(0, 0, 0, 0.6);
+}
