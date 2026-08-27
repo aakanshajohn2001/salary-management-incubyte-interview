@@ -10,7 +10,7 @@ import java.util.List;
 public interface SalaryRecordRepository extends JpaRepository<SalaryRecord, Long> {
 
     @Query("""
-            select sr from SalaryRecord sr
+            select sr from SalaryRecord sr join fetch sr.currency
             where sr.employee.id = :employeeId
             order by sr.effectiveDate desc, sr.id desc
             """)
@@ -22,7 +22,7 @@ public interface SalaryRecordRepository extends JpaRepository<SalaryRecord, Long
      * per employee.
      */
     @Query("""
-            select sr from SalaryRecord sr
+            select sr from SalaryRecord sr join fetch sr.currency
             where sr.employee.id in :employeeIds
               and sr.effectiveDate = (
                   select max(sr2.effectiveDate) from SalaryRecord sr2
