@@ -1,11 +1,27 @@
 <div class="app-shell">
-  <aside class="sidebar">
+  <aside
+    class="sidebar"
+    [class.collapsed]="sidebarCollapsed()"
+    [class.resizing]="isResizing()"
+    [style.width.px]="sidebarCollapsed() ? null : sidebarWidth()"
+  >
     <div class="brand">
       <span class="brand-mark">A</span>
-      <span class="brand-text">
-        ACME
-        <span class="brand-sub">Salary Management</span>
-      </span>
+      @if (!sidebarCollapsed()) {
+        <span class="brand-text">
+          ACME
+          <span class="brand-sub">Salary Management</span>
+        </span>
+      }
+      <button
+        mat-icon-button
+        class="collapse-toggle"
+        (click)="toggleSidebar()"
+        [attr.aria-label]="sidebarCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
+        [title]="sidebarCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
+      >
+        <mat-icon>{{ sidebarCollapsed() ? 'chevron_right' : 'chevron_left' }}</mat-icon>
+      </button>
     </div>
 
     <nav class="nav-links">
@@ -14,33 +30,56 @@
         routerLinkActive="active"
         #analyticsLink="routerLinkActive"
         [attr.aria-current]="analyticsLink.isActive ? 'page' : null"
+        [title]="sidebarCollapsed() ? 'Compensation' : null"
       >
         <mat-icon aria-hidden="true">insights</mat-icon>
-        Compensation
+        @if (!sidebarCollapsed()) {
+          <span>Compensation</span>
+        }
       </a>
       <a
         routerLink="/employees"
         routerLinkActive="active"
         #employeesLink="routerLinkActive"
         [attr.aria-current]="employeesLink.isActive ? 'page' : null"
+        [title]="sidebarCollapsed() ? 'Employees' : null"
       >
         <mat-icon aria-hidden="true">groups</mat-icon>
-        Employees
+        @if (!sidebarCollapsed()) {
+          <span>Employees</span>
+        }
       </a>
     </nav>
 
     <div class="sidebar-footer">
       @if (authService.username(); as username) {
         <span class="user-avatar" aria-hidden="true">{{ username[0] }}</span>
-        <span class="user-info">
-          <span class="user-name">{{ username }}</span>
-          <span class="user-role">HR Manager</span>
-        </span>
+        @if (!sidebarCollapsed()) {
+          <span class="user-info">
+            <span class="user-name">{{ username }}</span>
+            <span class="user-role">HR Manager</span>
+          </span>
+        }
       }
       <button mat-icon-button (click)="logout()" aria-label="Log out" title="Log out">
         <mat-icon>logout</mat-icon>
       </button>
     </div>
+
+    @if (!sidebarCollapsed()) {
+      <div
+        class="resize-handle"
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize sidebar"
+        tabindex="0"
+        [attr.aria-valuenow]="sidebarWidth()"
+        aria-valuemin="200"
+        aria-valuemax="400"
+        (mousedown)="startResize($event)"
+        (keydown)="onResizeKeydown($event)"
+      ></div>
+    }
   </aside>
 
   <main class="content">
