@@ -19,6 +19,10 @@ app:
   seed:
     enabled: ${SEED_ON_STARTUP:false}
     employee-count: 10000
+  admin:
+    # The one HR Manager login. Override both via env vars for any real deployment.
+    username: ${ADMIN_USERNAME:hr.manager}
+    password: ${ADMIN_PASSWORD:ChangeMe123!}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
 

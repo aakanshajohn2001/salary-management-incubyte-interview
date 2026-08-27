@@ -11,6 +11,9 @@ frontend/dist/
 frontend/.angular/
 npm-debug.log*
 
+# Tooling
+.claude/
+
 # IDE
 .idea/
 .vscode/
