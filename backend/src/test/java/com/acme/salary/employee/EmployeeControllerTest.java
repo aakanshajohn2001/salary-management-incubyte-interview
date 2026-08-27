@@ -154,4 +154,18 @@ class EmployeeControllerTest {
         mockMvc.perform(get("/api/employees"))
                 .andExpect(status().isUnauthorized());
     }
+
+    @Test
+    void salaryHistory_unknownEmployee_returns404() throws Exception {
+        mockMvc.perform(get("/api/employees/{id}/salary-history", 999_999)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void list_withInvalidJobBand_returns400() throws Exception {
+        mockMvc.perform(get("/api/employees").param("jobBand", "NOT_A_BAND")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isBadRequest());
+    }
 }
