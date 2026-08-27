@@ -18,7 +18,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.Date;
 import java.sql.PreparedStatement;
-import java.sql.Statement;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -194,7 +193,7 @@ public class SeedRunner implements ApplicationRunner {
                                  String countryCode, JobBand band, LocalDate hireDate, EmployeeStatus status) {
         var keyHolder = new org.springframework.jdbc.support.GeneratedKeyHolder();
         jdbcTemplate.update(connection -> {
-            PreparedStatement ps = connection.prepareStatement(INSERT_EMPLOYEE_SQL, Statement.RETURN_GENERATED_KEYS);
+            PreparedStatement ps = connection.prepareStatement(INSERT_EMPLOYEE_SQL, new String[]{"id"});
             ps.setString(1, firstName);
             ps.setString(2, lastName);
             ps.setString(3, email);
